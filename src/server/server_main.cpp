@@ -42,7 +42,9 @@ int main()
         n = recvfrom(iSockfd, data, MAXSIZE, 0, (sockaddr *)sCliAddr, &len);
         if (n == -1)
             cout << "recvfrom error:" << errno << endl;
-        cout << "Recv[" << n << "] ";
-        cout << DataToHex(data, n) << endl;
+        cout << "Recv[" << n << "] " << endl;
+        //cout << DataToHex(data, n) << endl;
+        char ackData[] = {0x01};
+        iRet = sendto(iSockfd, ackData, sizeof(ackData), 0, (sockaddr *)sCliAddr, len);
     }
 }
