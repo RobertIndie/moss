@@ -15,7 +15,7 @@ int readable_timeo(int fd, int sec) {
   FD_SET(fd, &rset);
   tv.tv_sec = sec;
   tv.tv_usec = 0;
-  return select(fd, &rset, NULL, NULL, &tv);
+  return select(fd + 1, &rset, NULL, NULL, &tv);
 }
 int main() {
   int totalPacket = 0, ackPacket = 0;
@@ -26,7 +26,7 @@ int main() {
   sSvrAddr->sin_port = htons(9877);
   int n;
   char data[] = {0x01, 0x02};
-  char data2[10];
+  char data2[50000];
   for (int i = 0; i < 10000; i++) {
     std::cout << "ACK/TOTAL: " << ackPacket << "/" << totalPacket << " "
               << ackPacket * 1.0 / totalPacket << std::endl;
@@ -35,7 +35,8 @@ int main() {
                reinterpret_cast<sockaddr *>(sSvrAddr), sizeof(*sSvrAddr));
     if (n == -1) continue;
     char ackData[1];
-    if (readable_timeo(iSockfd, 1000) == 0) {
+    if (readable_timeo(iSockfd, 1) == 0) {
+      std::cout << "Timeout" << std::endl;
       continue;
     }
     n = recvfrom(iSockfd, ackData, sizeof(ackData), 0, NULL, NULL);
