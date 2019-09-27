@@ -6,9 +6,8 @@ endif
 BUILD := $(shell mkdir -p $(PROJ_BASE)/build;cd $(PROJ_BASE)/build;pwd)
 OBJ_DIR := $(shell mkdir -p $(BUILD)/objects;cd $(BUILD)/objects;pwd)
 APP_DIR := $(shell mkdir -p $(BUILD)/apps;cd $(BUILD)/apps;pwd)
-INCLUDE :=
+INCLUDE := 
 
-SRC := $(wildcard *.cpp)
 OBJ := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 $(OBJ_DIR)/%.o : %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<

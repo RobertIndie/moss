@@ -1,6 +1,6 @@
 BUILD_PATH := \
-	./client\
-	./server\
+	./example/client\
+	./example/server\
 
 BUILD := $(shell mkdir -p ./build;cd ./build;pwd)
 
