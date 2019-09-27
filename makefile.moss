@@ -1,14 +1,17 @@
 CXX = g++
 CFLAGS += -std=c++11 -g -O2
 ifeq ($(PROJ_BASE),)
-	PROJ_BASE := .
+PROJ_BASE := .
 endif
 BUILD := $(shell mkdir -p $(PROJ_BASE)/build;cd $(PROJ_BASE)/build;pwd)
-OBJ_DIR := $(shell mkdir -p $(BUILD)/objects;cd $(BUILD)/objects;pwd)
 APP_DIR := $(shell mkdir -p $(BUILD)/apps;cd $(BUILD)/apps;pwd)
 INCLUDE := 
 
-OBJ := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
+ifeq ($(USE_SPEC_SRC),)
+SRC_DIRS = $(shell find . -type d)
+SRC += $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
+endif
+OBJ := $(SRC:%.cpp=%.o)
 $(OBJ_DIR)/%.o : %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 

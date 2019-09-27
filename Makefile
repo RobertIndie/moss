@@ -11,3 +11,8 @@ all:
 	
 clean:
 	rm -rf $(BUILD)
+	find . -name "*.o"|xargs rm
+
+rebuild:
+	make clean
+	make 
