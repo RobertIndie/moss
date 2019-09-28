@@ -18,9 +18,6 @@ SRC += $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
 endif
 
 OBJ := $(SRC:%.cpp=%.o)
-$(OBJ) : $(SRC)
-	$(CXX) $(CXXFLAGS) -I $(PROJ_BASE)/src -o $@ -c $<
-
 ifeq ($(TARGET_TYPE),EXE)
 $(TARGET): $(OBJ)
 	$(CXX) $(CXXFLAGS) -I $(PROJ_BASE)/src $(INC) $(LIB) -o $(APP_DIR)/$(TARGET) $(OBJ)
@@ -29,6 +26,9 @@ ifeq ($(TARGET_TYPE),LIB)
 $(TARGET): $(OBJ)
 	$(AR) $(LIB_DIR)/$(TARGET) $(OBJ)
 endif
+
+$(OBJ) : $(SRC)
+	$(CXX) $(CXXFLAGS) -I $(PROJ_BASE)/src -o $@ -c $<
 
 clean:
 	rm -rf $(BUILD)
