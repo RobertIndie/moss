@@ -11,10 +11,10 @@ all:
 	done
 	
 clean:
-	rm -rf $(BUILD)
-	find . -name "*.o"|xargs rm
-	find . -name "*.a"|xargs rm
+	-rm -rf $(BUILD)
+	-find . -name "*.o"|xargs rm
+	-find . -name "*.a"|xargs rm
 
 rebuild:
-	make clean
+	-make clean
 	make 
