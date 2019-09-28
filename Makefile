@@ -1,4 +1,5 @@
 BUILD_PATH := \
+	./src\
 	./example/client\
 	./example/server\
 
@@ -12,6 +13,7 @@ all:
 clean:
 	rm -rf $(BUILD)
 	find . -name "*.o"|xargs rm
+	find . -name "*.a"|xargs rm
 
 rebuild:
 	make clean

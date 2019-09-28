@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "common/common.h"
 const size_t MAXSIZE = 4096;
 int readable_timeo(int fd, int sec) {
   fd_set rset;
