@@ -9,14 +9,28 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#ifdef CPP11
-template <typename TimeType = int64_t>
-#else
-template <typename TimeType>
-#endif
-TimeType GetTimestamp() {
+inline int64_t GetTimestamp() {
   timeval tv;
   gettimeofday(&tv, NULL);
-  return static_cast<TimeType>(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+  return static_cast<int64_t>(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
+
+inline int ReadableTimeout(int fd, int msec) {
+  return ReadableTimeout(fd, msec / 1000, msec % 1000 * 1000);
+}
+
+inline int ReadableTimeout(int fd, int sec, int usec) {
+  timeval tv;
+  tv.tv_sec = sec;
+  tv.tv_usec = usec;
+  return ReadableTimeout(fd, &tv);
+}
+
+inline int ReadableTimeout(int fd, timeval *tv) {
+  fd_set rset;
+  timeval tv;
+  FD_ZERO(&rset);
+  FD_SET(fd, &rset);
+  return select(fd + 1, &rset, NULL, NULL, &tv);
 }
 #endif  // SRC_UTIL_UTIL_H_

@@ -3,17 +3,45 @@
  * */
 #include "common/common.h"
 
-template <typename TimeType, typename CountType>
-RTTInfo<TimeType, CountType>::RTTInfo() {
+RTTInfo::RTTInfo() { this->Init(); }
+
+void RTTInfo::Init() {
   this->time_base = GetTimestamp();
+  this->rtt = 0;
+  this->srtt = 0;
+  this->rttvar = 0.75;
+  this->rto = this->GetRTO();
 }
 
-template <typename TimeType, typename CountType>
-TimeType RTTInfo<TimeType, CountType>::MinMax() {}
+void RTTInfo::NewPack() { this->retransmitted_count = 0; }
 
-template <typename TimeType, typename CountType>
-void RTTInfo<TimeType, CountType>::NewPack() {
-  this->retransmitted_count = 0;
+float RTTInfo::GetRTO() {
+  float rto = this->srtt + (4.0 * this->rttvar);
+  if (rto < kRXTMin)
+    rto = kRXTMin;
+  else if (rto > kRXTMax)
+    rto = kRXTMax;
+  return rto;
+}
+
+template <typename TimeType = uint32_t>
+TimeType RTTInfo::GetRelativeTs() {
+  int64_t ts = GetTimestamp();
+  return static_cast<TimeType>(ts - this->time_base);
+}
+
+template <typename TimeType = uint32_t>
+TimeType RTTInfo::Start() {
+  return static_cast<TimeType>(
+      this->GetRTO() + 0.5);  // if TimeType is integer, round float to integer
+}
+
+int RTTInfo::Timeout() {
+  this->rto *= 2;
+  if (++this->retransmitted_count > kRXTMaxTimes) {
+    return -1;  // give up sending this packet
+  }
+  return 0;
 }
 
 int UDPChannel::Connect(std::string ip, unsigned short port) {
@@ -24,7 +52,11 @@ int UDPChannel::Connect(std::string ip, unsigned short port) {
   this->sa_->sin_port = htons(port);
 }
 
-Data* UDPChannel::Send(Data* in_data, Data* out_data) {
+int UDPChannel::Send(Data* in_data, Data* out_data) {
+  if (this->reinit_rtt) {
+    this->rtt_info_.Init();
+  }
+
   msghdr msgsend, msgrecv;
   iovec iovsend[2], iovrecv[2];
   hdr sendhdr, recvhdr;
@@ -48,4 +80,19 @@ Data* UDPChannel::Send(Data* in_data, Data* out_data) {
   msgrecv.msg_iovlen = 2;
 
   this->rtt_info_.NewPack();
+  sendhdr.ts = this->rtt_info_.GetRelativeTs();
+  sendmsg(this->socket_fd_, &msgsend, 0);
+
+  bool isSendAgain = true;
+  while (isSendAgain) {
+    isSendAgain = false;
+    if (ReadableTimeout(this->socket_fd_, this->rtt_info_.Start())) {
+      // timeout
+      if (this->rtt_info_.Timeout() < 0) {
+        this->reinit_rtt = true;  // reinit rtt_info in case we're called again
+        return -1;                // send error
+      }
+      isSendAgain = true;
+    }
+  }
 }
