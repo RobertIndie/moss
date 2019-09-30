@@ -3,12 +3,12 @@
  * */
 #include "common/common.h"
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 RTTInfo<TimeType>::RTTInfo() {
   this->Init();
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 void RTTInfo<TimeType>::Init() {
   this->time_base = GetTimestamp();
   this->rtt = 0;
@@ -17,12 +17,12 @@ void RTTInfo<TimeType>::Init() {
   this->rto = this->GetRTO();
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 void RTTInfo<TimeType>::NewPack() {
   this->retransmitted_count = 0;
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 float RTTInfo<TimeType>::GetRTO() {
   float rto = this->srtt + (4.0 * this->rttvar);
   if (rto < kRXTMin)
@@ -32,19 +32,19 @@ float RTTInfo<TimeType>::GetRTO() {
   return rto;
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 TimeType RTTInfo<TimeType>::GetRelativeTs() {
   int64_t ts = GetTimestamp();
   return static_cast<TimeType>(ts - this->time_base);
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 TimeType RTTInfo<TimeType>::Start() {
   return static_cast<TimeType>(
       this->GetRTO() + 0.5);  // if TimeType is integer, round float to integer
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 int RTTInfo<TimeType>::Timeout() {
   this->rto *= 2;
   if (++this->retransmitted_count > kRXTMaxTimes) {
@@ -53,7 +53,7 @@ int RTTInfo<TimeType>::Timeout() {
   return 0;
 }
 
-template <typename TimeType = uint32_t>
+template <typename TimeType>
 void RTTInfo<TimeType>::Stop(TimeType rtt) {
   this->rtt = rtt;
   double delta = this->rtt - this->srtt;
@@ -114,7 +114,7 @@ int UDPChannel::Send(Data* in_data, Data* out_data) {
       isSendAgain = true;
     } else {
       ssize_t recvSize = recvmsg(this->socket_fd_, &msgrecv, 0);
-      if (n < sizeof(hdr) || recvhdr.seq != sendhdr.seq) {
+      if (recvSize < sizeof(hdr) || recvhdr.seq != sendhdr.seq) {
         isSendAgain = true;
       }
     }
