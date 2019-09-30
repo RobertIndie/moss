@@ -19,6 +19,7 @@ const int kRXTMin = 20;
 const int kRXTMax = 10000;
 // max times to retransmit
 const int kRXTMaxTimes = 3;
+template <typename TimeType = uint32_t>
 class RTTInfo {
  public:
   float rtt = 0;
@@ -33,15 +34,14 @@ class RTTInfo {
   // get and minmax rto before start sending msg, do not set rto = GetRTO() in
   // sending
   float GetRTO();
-  template <typename TimeType = uint32_t>
   TimeType GetRelativeTs();
-  template <typename TimeType = uint32_t>
   TimeType Start();
   // Called when send packet timeout, and check if retransmitted_count is more
   // than max times to retransmit
   // if retransmiited_count > max retransmit times : return -1,stop packet
   // sending, otherwise return 0,continue sending
   int Timeout();
+  void Stop(TimeType);
 };
 
 struct hdr {
@@ -63,7 +63,7 @@ class UDPChannel : public Channel {
 
  private:
   bool reinit_rtt = false;
-  RTTInfo rtt_info_;
+  RTTInfo<uint32_t> rtt_info_;
   int socket_fd_;
   sockaddr_in *sa_ = new sockaddr_in;
   uint32_t seq_ = 0;

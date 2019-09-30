@@ -3,9 +3,13 @@
  * */
 #include "common/common.h"
 
-RTTInfo::RTTInfo() { this->Init(); }
+template <typename TimeType = uint32_t>
+RTTInfo<TimeType>::RTTInfo() {
+  this->Init();
+}
 
-void RTTInfo::Init() {
+template <typename TimeType = uint32_t>
+void RTTInfo<TimeType>::Init() {
   this->time_base = GetTimestamp();
   this->rtt = 0;
   this->srtt = 0;
@@ -13,9 +17,13 @@ void RTTInfo::Init() {
   this->rto = this->GetRTO();
 }
 
-void RTTInfo::NewPack() { this->retransmitted_count = 0; }
+template <typename TimeType = uint32_t>
+void RTTInfo<TimeType>::NewPack() {
+  this->retransmitted_count = 0;
+}
 
-float RTTInfo::GetRTO() {
+template <typename TimeType = uint32_t>
+float RTTInfo<TimeType>::GetRTO() {
   float rto = this->srtt + (4.0 * this->rttvar);
   if (rto < kRXTMin)
     rto = kRXTMin;
@@ -25,23 +33,34 @@ float RTTInfo::GetRTO() {
 }
 
 template <typename TimeType = uint32_t>
-TimeType RTTInfo::GetRelativeTs() {
+TimeType RTTInfo<TimeType>::GetRelativeTs() {
   int64_t ts = GetTimestamp();
   return static_cast<TimeType>(ts - this->time_base);
 }
 
 template <typename TimeType = uint32_t>
-TimeType RTTInfo::Start() {
+TimeType RTTInfo<TimeType>::Start() {
   return static_cast<TimeType>(
       this->GetRTO() + 0.5);  // if TimeType is integer, round float to integer
 }
 
-int RTTInfo::Timeout() {
+template <typename TimeType = uint32_t>
+int RTTInfo<TimeType>::Timeout() {
   this->rto *= 2;
   if (++this->retransmitted_count > kRXTMaxTimes) {
     return -1;  // give up sending this packet
   }
   return 0;
+}
+
+template <typename TimeType = uint32_t>
+void RTTInfo<TimeType>::Stop(TimeType rtt) {
+  this->rtt = rtt;
+  double delta = this->rtt - this->srtt;
+  this->srtt += delta / 8;
+  if (delta < 0.0) delta = -delta;
+  this->rttvar += (delta - this->rttvar) / 4;
+  this->rto = this->GetRTO();
 }
 
 int UDPChannel::Connect(std::string ip, unsigned short port) {
@@ -82,7 +101,7 @@ int UDPChannel::Send(Data* in_data, Data* out_data) {
   this->rtt_info_.NewPack();
   sendhdr.ts = this->rtt_info_.GetRelativeTs();
   sendmsg(this->socket_fd_, &msgsend, 0);
-
+  ssize_t recvSize = 0;
   bool isSendAgain = true;
   while (isSendAgain) {
     isSendAgain = false;
@@ -93,6 +112,14 @@ int UDPChannel::Send(Data* in_data, Data* out_data) {
         return -1;                // send error
       }
       isSendAgain = true;
+    } else {
+      ssize_t recvSize = recvmsg(this->socket_fd_, &msgrecv, 0);
+      if (n < sizeof(hdr) || recvhdr.seq != sendhdr.seq) {
+        isSendAgain = true;
+      }
     }
   }
+  // Send and recv packet success
+  this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr.ts);
+  return (recvSize - sizeof(hdr));
 }
