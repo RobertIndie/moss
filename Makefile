@@ -5,6 +5,8 @@ BUILD_PATH := \
 
 BUILD := $(shell mkdir -p ./build;cd ./build;pwd)
 
+.PHONY: all clean rebuild
+
 all: 
 	@for mod in $(BUILD_PATH); do\
 		cd $$mod && make && cd -;\
