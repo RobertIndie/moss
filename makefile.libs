@@ -1,0 +1,26 @@
+MAKEFILE_LIB = MAKEFILE_LIB_LOADED
+
+ifeq ($(PROJ_BASE),)
+PROJ_BASE := .
+endif
+BUILD := $(shell mkdir -p $(PROJ_BASE)/build;cd $(PROJ_BASE)/build;pwd)
+LIB_DIR := $(shell mkdir -p $(BUILD)/libs;cd $(BUILD)/libs;pwd)
+
+# project lib dir
+LIB_PROJ := -L $(LIB_DIR)
+
+# moss lib
+INC_MOSS := -I $(PROJ_BASE)/src
+LIB_MOSS := -lMoss
+
+# gtest lib
+INC_GTEST := -I $(PROJ_BASE)/third_party/googletest/googletest/include
+LIB_DIR_GTEST := -L $(PROJ_BASE)/third_party/build/googletest/lib
+LIB_GTEST := -lgtest
+
+# include path
+INC +=
+# lib dir path
+LIB += $(LIB_PROJ)
+# lib files
+LIB_FILES += 

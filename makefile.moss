@@ -8,9 +8,9 @@ BUILD := $(shell mkdir -p $(PROJ_BASE)/build;cd $(PROJ_BASE)/build;pwd)
 APP_DIR := $(shell mkdir -p $(BUILD)/apps;cd $(BUILD)/apps;pwd)
 LIB_DIR := $(shell mkdir -p $(BUILD)/libs;cd $(BUILD)/libs;pwd)
 
-INC += -I $(PROJ_BASE)/src
-LIB += -L $(LIB_DIR)
-LIB_A += -lMoss
+ifeq ($(MAKEFILE_LIB),)
+include $(PROJ_BASE)/makefile.libs
+endif
 
 ifeq ($(USE_SPEC_SRC),)
 SRC_DIRS = $(shell find . -type d)
@@ -20,7 +20,7 @@ endif
 OBJ := $(SRC:%.cpp=%.o)
 ifeq ($(TARGET_TYPE),EXE)
 $(TARGET): $(OBJ)
-	$(CXX) $(CXXFLAGS) -I $(PROJ_BASE)/src $(INC) $(LIB) -o $(APP_DIR)/$(TARGET) $(OBJ)
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(LIB_FILES) -o $(APP_DIR)/$(TARGET) $(OBJ)
 endif
 ifeq ($(TARGET_TYPE),LIB)
 $(TARGET): $(OBJ)
@@ -28,7 +28,7 @@ $(TARGET): $(OBJ)
 endif
 
 $(OBJ) : $(SRC)
-	$(CXX) $(CXXFLAGS) -I $(PROJ_BASE)/src -o $@ -c $<
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(LIB_FILES) -o $@ -c $<
 
 .PHONY: clean
 
