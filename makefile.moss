@@ -30,5 +30,7 @@ endif
 $(OBJ) : $(SRC)
 	$(CXX) $(CXXFLAGS) -I $(PROJ_BASE)/src -o $@ -c $<
 
+.PHONY: clean
+
 clean:
 	rm -rf $(BUILD)
