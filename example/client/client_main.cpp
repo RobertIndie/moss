@@ -49,8 +49,7 @@ int old_main() {
 }
 
 int main() {
-  //old_main();
-  UDPChannel channel;
+  UDPChannel channel(UDPChannel::ChannelType::CLIENT);
   channel.Connect("0.0.0.0", 9877);
   char send_buff[100];
   char recv_buff[100];
