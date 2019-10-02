@@ -1,4 +1,4 @@
-PROJ_BASE := ..
+PROJ_BASE := ../..
 include $(PROJ_BASE)/makefile.libs
 
 TARGET_TYPE := EXE

@@ -3,13 +3,7 @@
  * */
 #include "common/common.h"
 
-template <typename TimeType>
-RTTInfo<TimeType>::RTTInfo() {
-  this->Init();
-}
-
-template <typename TimeType>
-void RTTInfo<TimeType>::Init() {
+void RTTInfo::Init() {
   this->time_base = GetTimestamp();
   this->rtt = 0;
   this->srtt = 0;
@@ -17,13 +11,9 @@ void RTTInfo<TimeType>::Init() {
   this->rto = this->GetRTO();
 }
 
-template <typename TimeType>
-void RTTInfo<TimeType>::NewPack() {
-  this->retransmitted_count = 0;
-}
+void RTTInfo::NewPack() { this->retransmitted_count = 0; }
 
-template <typename TimeType>
-float RTTInfo<TimeType>::GetRTO() {
+float RTTInfo::GetRTO() {
   float rto = this->srtt + (4.0 * this->rttvar);
   if (rto < kRXTMin)
     rto = kRXTMin;
@@ -33,19 +23,18 @@ float RTTInfo<TimeType>::GetRTO() {
 }
 
 template <typename TimeType>
-TimeType RTTInfo<TimeType>::GetRelativeTs() {
+TimeType RTTInfo::GetRelativeTs() {
   int64_t ts = GetTimestamp();
   return static_cast<TimeType>(ts - this->time_base);
 }
 
 template <typename TimeType>
-TimeType RTTInfo<TimeType>::Start() {
+TimeType RTTInfo::Start() {
   return static_cast<TimeType>(
       this->GetRTO() + 0.5);  // if TimeType is integer, round float to integer
 }
 
-template <typename TimeType>
-int RTTInfo<TimeType>::Timeout() {
+int RTTInfo::Timeout() {
   this->rto *= 2;
   if (++this->retransmitted_count > kRXTMaxTimes) {
     return -1;  // give up sending this packet
@@ -54,7 +43,7 @@ int RTTInfo<TimeType>::Timeout() {
 }
 
 template <typename TimeType>
-void RTTInfo<TimeType>::Stop(TimeType rtt) {
+void RTTInfo::Stop(TimeType rtt) {
   this->rtt = rtt;
   double delta = this->rtt - this->srtt;
   this->srtt += delta / 8;
@@ -77,10 +66,13 @@ int UDPChannel::Send(Data* in_data, Data* out_data) {
   }
 
   msghdr msgsend, msgrecv;
+  msgsend.msg_control = NULL;
+  msgsend.msg_controllen = 0;
+  msgsend.msg_flags = 0;
   iovec iovsend[2], iovrecv[2];
   hdr sendhdr, recvhdr;
   msgsend.msg_name = this->sa_;
-  msgsend.msg_namelen = sizeof(this->sa_);
+  msgsend.msg_namelen = sizeof(*this->sa_);
 
   // set iovec for msgsend
   iovsend[0].iov_base = &sendhdr;
@@ -99,13 +91,15 @@ int UDPChannel::Send(Data* in_data, Data* out_data) {
   msgrecv.msg_iovlen = 2;
 
   this->rtt_info_.NewPack();
-  sendhdr.ts = this->rtt_info_.GetRelativeTs();
-  sendmsg(this->socket_fd_, &msgsend, 0);
+
   ssize_t recvSize = 0;
   bool isSendAgain = true;
+  int _n = 0;
   while (isSendAgain) {
     isSendAgain = false;
-    if (ReadableTimeout(this->socket_fd_, this->rtt_info_.Start())) {
+    sendhdr.ts = this->rtt_info_.GetRelativeTs();
+    sendmsg(this->socket_fd_, &msgsend, 0);
+    if (ReadableTimeout(this->socket_fd_, this->rtt_info_.Start()) == 0) {
       // timeout
       if (this->rtt_info_.Timeout() < 0) {
         this->reinit_rtt = true;  // reinit rtt_info in case we're called again

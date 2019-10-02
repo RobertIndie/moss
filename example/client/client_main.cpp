@@ -20,7 +20,7 @@ int readable_timeo(int fd, int sec) {
   return select(fd + 1, &rset, NULL, NULL, &tv);
 }
 
-int main() {
+int old_main() {
   int totalPacket = 0, ackPacket = 0;
   int iSockfd = socket(AF_INET, SOCK_DGRAM, 0);
   sockaddr_in *sSvrAddr = new sockaddr_in;
@@ -30,7 +30,7 @@ int main() {
   int n;
   char data[] = {0x01, 0x02};
   char data2[50000];
-  for (int i = 0; i < 10000; i++) {
+  for (int i = 0; i < 2; i++) {
     std::cout << "ACK/TOTAL: " << ackPacket << "/" << totalPacket << " "
               << ackPacket * 1.0 / totalPacket << std::endl;
     totalPacket++;
@@ -46,4 +46,19 @@ int main() {
     if (n == -1) continue;
     if (ackData[0] == 0x01) ackPacket++;
   }
+}
+
+int main() {
+  //old_main();
+  UDPChannel channel;
+  channel.Connect("0.0.0.0", 9877);
+  char send_buff[100];
+  char recv_buff[100];
+  Data send_data, recv_data;
+  send_data.buff = send_buff;
+  send_data.len = 100;
+  recv_data.buff = recv_buff;
+  recv_data.len = 100;
+  channel.Send(&send_data, &recv_data);
+  return 0;
 }

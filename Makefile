@@ -13,7 +13,8 @@ all:
 	done
 
 test:
-	cd test && make
+	cd test/testcases && make
+	cd test/virtual_server && make
 	./build/apps/Test
 	
 clean:
