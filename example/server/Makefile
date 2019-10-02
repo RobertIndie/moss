@@ -5,6 +5,6 @@ TARGET_TYPE := EXE
 TARGET := Server
 
 INC += $(INC_MOSS)
-LIB_FILES += $(LIB_MOSS)
+LIB += $(LIB_MOSS)
 
 include $(PROJ_BASE)/makefile.moss

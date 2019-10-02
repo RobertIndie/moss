@@ -6,7 +6,7 @@ PROJ_BASE := .
 endif
 BUILD := $(shell mkdir -p $(PROJ_BASE)/build;cd $(PROJ_BASE)/build;pwd)
 APP_DIR := $(shell mkdir -p $(BUILD)/apps;cd $(BUILD)/apps;pwd)
-LIB_DIR := $(shell mkdir -p $(BUILD)/libs;cd $(BUILD)/libs;pwd)
+LIBS_DIR := $(shell mkdir -p $(BUILD)/libs;cd $(BUILD)/libs;pwd)
 
 ifeq ($(MAKEFILE_LIB),)
 include $(PROJ_BASE)/makefile.libs
@@ -20,15 +20,15 @@ endif
 OBJ := $(SRC:%.cpp=%.o)
 ifeq ($(TARGET_TYPE),EXE)
 $(TARGET): $(OBJ)
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(LIB_FILES) -o $(APP_DIR)/$(TARGET) $(OBJ)
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB_DIR) $(LIB) -o $(APP_DIR)/$(TARGET) $(OBJ)
 endif
 ifeq ($(TARGET_TYPE),LIB)
 $(TARGET): $(OBJ)
-	$(AR) $(LIB_DIR)/$(TARGET) $(OBJ)
+	$(AR) $(LIBS_DIR)/$(TARGET) $(OBJ)
 endif
 
 $(OBJ) : $(SRC)
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB) $(LIB_FILES) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB_DIR) $(LIB) -o $@ -c $<
 
 .PHONY: clean
 
