@@ -217,9 +217,7 @@ int UDPServerChannel::Bind(std::string ip, unsigned short port) {
 }
 
 int UDPServerChannel::Serve(ServeFunc serve_func) {
-  sockaddr_in *cliAddr = new sockaddr_in;
   while (1) {
-    socklen_t len = sizeof(*cliAddr);
     PacketBuilder pbrecv(nullptr);
     Header *recvhdr = pbrecv.MakeHeader();
     pbrecv.MakeData(nullptr, 1452);
@@ -231,5 +229,4 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     msghdr *msgsend = pbsend.GetResult();
     sendmsg(this->socket_fd_, msgsend, 0);
   }
-  delete cliAddr;
 }
