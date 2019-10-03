@@ -9,6 +9,12 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+#define DELETE_PTR(ptr) \
+  if (ptr != nullptr) delete ptr, ptr = nullptr
+
+#define DELETE_ARRAY_PTR(ptr) \
+  if (ptr != nullptr) delete[] ptr, ptr = nullptr
+
 inline int64_t GetTimestamp() {
   timeval tv;
   gettimeofday(&tv, NULL);

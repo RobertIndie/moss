@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "common/common.h"
 
 const size_t MAXSIZE = 65535;
 char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
@@ -21,7 +22,7 @@ std::string DataToHex(char *data, size_t len) {
   }
   return ss.str();
 }
-int main() {
+int old_main() {
   int iRet;
   int iSockfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (iSockfd == -1) std::cout << "socket error:" << errno << std::endl;
@@ -46,4 +47,10 @@ int main() {
     iRet = sendto(iSockfd, ackData, sizeof(ackData), 0,
                   reinterpret_cast<sockaddr *>(sCliAddr), len);
   }
+}
+
+int main() {
+  UDPServerChannel channel;
+  channel.Bind("0.0.0.0", 9877);
+  channel.Serve(nullptr);
 }
