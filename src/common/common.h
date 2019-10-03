@@ -71,7 +71,7 @@ class PacketBuilder {
   explicit PacketBuilder(sockaddr_in *sa);
   ~PacketBuilder();
   Header *MakeHeader(uint32_t seq = 0, uint32_t ts = 0);
-  Data *MakeData(char *data = NULL,
+  Data *MakeData(char *data = nullptr,
                  size_t data_size = 0);  // if data is NULL, then PacketBuilder
                                          // will create memory for data.
   Data *MakeData(Data *data);

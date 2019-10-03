@@ -139,7 +139,7 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
   // msgsend.msg_controllen = 0;
   // msgsend.msg_flags = 0;
   iovec iovsend[2], iovrecv[2];
-  Header *sendhdr, recvhdr;
+  Header *sendhdr, *recvhdr;
   // msgsend.msg_name = this->sa_;
   // msgsend.msg_namelen = sizeof(*this->sa_);
 
@@ -151,10 +151,10 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
   // msgsend.msg_iov = iovsend;
   // msgsend.msg_iovlen = 2;
 
-  PacketBuilder pb(this->sa_);
-  sendhdr = pb.MakeHeader();
-  pb.MakeData(in_data);
-  msgsend = pb.GetResult();
+  PacketBuilder pbsend(this->sa_);
+  sendhdr = pbsend.MakeHeader();
+  pbsend.MakeData(in_data);
+  msgsend = pbsend.GetResult();
 
   // set iovec for msgrecv
   iovrecv[0].iov_base = &recvhdr;
@@ -163,6 +163,11 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
   iovrecv[1].iov_len = out_data->len;
   msgrecv.msg_iov = iovrecv;
   msgrecv.msg_iovlen = 2;
+
+  PacketBuilder pbrecv(this->sa_);
+  recvhdr = pbrecv.MakeHeader();
+  pbrecv.MakeData(out_data);
+  msgsend = pbrecv.GetResult();
 
   this->rtt_info_.NewPack();
 
@@ -181,13 +186,13 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
       isSendAgain = true;
     } else {
       ssize_t recvSize = recvmsg(this->socket_fd_, &msgrecv, 0);
-      if (recvSize < sizeof(Header) || recvhdr.seq != sendhdr->seq) {
+      if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq) {
         isSendAgain = true;
       }
     }
   }
   // Send and recv packet success
-  this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr.ts);
+  this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr->ts);
   return (recvSize - sizeof(Header));
 }
 #pragma endregion
@@ -201,6 +206,16 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
   sockaddr_in *cliAddr = new sockaddr_in;
   while (1) {
     socklen_t len = sizeof(*cliAddr);
+    PacketBuilder pbrecv(nullptr);
+    Header *recvhdr = pbrecv.MakeHeader();
+    pbrecv.MakeData(nullptr, 1452);
+    msghdr *msgrecv = pbrecv.GetResult();
+    ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
+    PacketBuilder pbsend(nullptr);
+    pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);  // todo
+    pbsend.MakeData(nullptr, 0);
+    msghdr *msgsend = pbsend.GetResult();
+    sendmsg(this->socket_fd_, msgsend, 0);
   }
   delete cliAddr;
 }
