@@ -139,34 +139,12 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
   }
 
   msghdr *msgsend, *msgrecv;
-  // msgsend.msg_control = NULL;
-  // msgsend.msg_controllen = 0;
-  // msgsend.msg_flags = 0;
-  // iovec iovsend[2], iovrecv[2];
   Header *sendhdr, *recvhdr;
-  // msgsend.msg_name = this->sa_;
-  // msgsend.msg_namelen = sizeof(*this->sa_);
-
-  // // set iovec for msgsend
-  // iovsend[0].iov_base = &sendhdr;
-  // iovsend[0].iov_len = sizeof(Header);
-  // iovsend[1].iov_base = in_data->buff;
-  // iovsend[1].iov_len = in_data->len;
-  // msgsend.msg_iov = iovsend;
-  // msgsend.msg_iovlen = 2;
 
   PacketBuilder pbsend(this->sa_);
   sendhdr = pbsend.MakeHeader();
   pbsend.MakeData(in_data);
   msgsend = pbsend.GetResult();
-
-  // set iovec for msgrecv
-  // iovrecv[0].iov_base = &recvhdr;
-  // iovrecv[0].iov_len = sizeof(Header);
-  // iovrecv[1].iov_base = out_data->buff;
-  // iovrecv[1].iov_len = out_data->len;
-  // msgrecv.msg_iov = iovrecv;
-  // msgrecv.msg_iovlen = 2;
 
   PacketBuilder pbrecv(nullptr);
   recvhdr = pbrecv.MakeHeader();
