@@ -8,7 +8,7 @@ void RTTInfo::Init() {
   this->time_base = GetTimestamp();
   this->rtt = 0;
   this->srtt = 0;
-  this->rttvar = 0.75;
+  this->rttvar = 50;
   this->rto = this->GetRTO();
 }
 
@@ -32,7 +32,7 @@ TimeType RTTInfo::GetRelativeTs() {
 template <typename TimeType>
 TimeType RTTInfo::Start() {
   return static_cast<TimeType>(
-      this->GetRTO() + 0.5);  // if TimeType is integer, round float to integer
+      this->rto + 0.5);  // if TimeType is integer, round float to integer
 }
 
 int RTTInfo::Timeout() {
@@ -173,24 +173,34 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
 
   ssize_t recvSize = 0;
   bool isSendAgain = true;
-  while (isSendAgain) {
+  do {
     isSendAgain = false;
+    sendhdr->seq = 1;
     sendhdr->ts = this->rtt_info_.GetRelativeTs();
+    std::cout << "Send:" << sendhdr->ts << std::endl;
     sendmsg(this->socket_fd_, msgsend, 0);
-    if (ReadableTimeout(this->socket_fd_, this->rtt_info_.Start()) == 0) {
-      // timeout
-      if (this->rtt_info_.Timeout() < 0) {
-        this->reinit_rtt = true;  // reinit rtt_info in case we're called again
-        return -1;                // send error
-      }
-      isSendAgain = true;
-    } else {
-      ssize_t recvSize = recvmsg(this->socket_fd_, &msgrecv, 0);
-      if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq) {
+    int waitTime = this->rtt_info_.Start();
+    bool isContinueWait = false;
+    do {
+      isContinueWait = false;
+      if (ReadableTimeout(this->socket_fd_, waitTime) == 0) {
+        // timeout
+        if (this->rtt_info_.Timeout() < 0) {
+          this->reinit_rtt =
+              true;   // reinit rtt_info in case we're called again
+          return -1;  // send error
+        }
         isSendAgain = true;
+      } else {
+        ssize_t recvSize = recvmsg(this->socket_fd_, &msgrecv, 0);
+        if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq) {
+          waitTime -= this->rtt_info_.GetRelativeTs();
+          if (waitTime < 0) break;
+          isContinueWait = true;
+        }
       }
-    }
-  }
+    } while (isContinueWait);
+  } while (isSendAgain);
   // Send and recv packet success
   this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr->ts);
   return (recvSize - sizeof(Header));

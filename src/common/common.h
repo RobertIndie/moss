@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <cstdint>
 #include <string>
+#include "iostream"
 #include "util/util.h"
 
 struct Data {
@@ -35,11 +36,11 @@ const int kRXTMax = 10000;
 const int kRXTMaxTimes = 3;
 class RTTInfo {
  public:
-  float rtt = 0;
-  float srtt = 0;
-  float rttvar = 0.75;
+  float rtt;
+  float srtt;
+  float rttvar;
   int retransmitted_count;
-  float rto = 0;
+  float rto;
   int64_t time_base;
   RTTInfo() { this->Init(); }
   void Init();
@@ -129,7 +130,7 @@ class UDPServerChannel : public ServerChannel, public UDPChannel {
  public:
   UDPServerChannel() : Channel() {}
   int Bind(std::string ip, unsigned short port);
-  int Serve(ServeFunc serve_func);
+  int Serve(ServeFunc serve_func)__attribute__((optimize(0)));
 };
 
 #endif  // SRC_COMMON_COMMON_H_
