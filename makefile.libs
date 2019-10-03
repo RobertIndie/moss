@@ -18,9 +18,14 @@ INC_GTEST := -I $(PROJ_BASE)/third_party/googletest/googletest/include
 LIB_DIR_GTEST := -L $(PROJ_BASE)/third_party/build/googletest/lib
 LIB_GTEST := -pthread -lgtest_main -lgtest # pay attention to the lib order
 
+# glog lib
+INC_GLOG := -I $(PROJ_BASE)/third_party/glog/src
+LIB_DIR_GLOG := -L $(PROJ_BASE)/third_party/glog/.libs
+LIB_GLOG := -lglog
+
 # include path
-INC +=
+INC += $(INC_GLOG)
 # lib dir path
-LIB_DIR += $(LIB_PROJ)
+LIB_DIR += $(LIB_PROJ) $(LIB_DIR_GLOG)
 # lib files
-LIB += 
+LIB += $(LIB_GLOG)
