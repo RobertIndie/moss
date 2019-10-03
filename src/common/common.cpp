@@ -63,6 +63,10 @@ PacketBuilder::PacketBuilder(sockaddr_in *sa) {
   if (sa != nullptr) {
     this->result->msg_name = sa;
     this->result->msg_namelen = sizeof(*sa);
+  } else {
+    sockaddr_in *new_sa = new sockaddr_in;
+    this->result->msg_name = new_sa;
+    this->result->msg_namelen = sizeof(*new_sa);
   }
 #define IOV_LEN 2
   iovec *iov = new iovec[IOV_LEN];
@@ -164,7 +168,7 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
   // msgrecv.msg_iov = iovrecv;
   // msgrecv.msg_iovlen = 2;
 
-  PacketBuilder pbrecv(this->sa_);
+  PacketBuilder pbrecv(nullptr);
   recvhdr = pbrecv.MakeHeader();
   pbrecv.MakeData(out_data);
   msgrecv = pbrecv.GetResult();
@@ -221,9 +225,9 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     pbrecv.MakeData(nullptr, 1452);
     msghdr *msgrecv = pbrecv.GetResult();
     ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
-    PacketBuilder pbsend(nullptr);
+    PacketBuilder pbsend(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name));
     pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);  // todo
-    pbsend.MakeData(nullptr, 0);
+    pbsend.MakeData(nullptr, 1);
     msghdr *msgsend = pbsend.GetResult();
     sendmsg(this->socket_fd_, msgsend, 0);
   }

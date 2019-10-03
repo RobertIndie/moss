@@ -50,7 +50,6 @@ int old_main() {
 }
 
 int main() {
-  old_main();
   UDPServerChannel channel;
   channel.Bind("0.0.0.0", 9877);
   channel.Serve(nullptr);

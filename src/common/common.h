@@ -15,7 +15,9 @@
 
 struct Data {
   Data(char *buff, size_t len) : buff(buff), len(len), isFreeMem(false) {}
-  explicit Data(size_t len) : isFreeMem(true) { this->buff = new char[len]; }
+  explicit Data(size_t len) : len(len), isFreeMem(true) {
+    this->buff = new char[len];
+  }
   char *buff;
   size_t len;
   ~Data() {
@@ -130,7 +132,7 @@ class UDPServerChannel : public ServerChannel, public UDPChannel {
  public:
   UDPServerChannel() : Channel() {}
   int Bind(std::string ip, unsigned short port);
-  int Serve(ServeFunc serve_func)__attribute__((optimize(0)));
+  int Serve(ServeFunc serve_func) __attribute__((optimize(0)));
 };
 
 #endif  // SRC_COMMON_COMMON_H_
