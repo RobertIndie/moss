@@ -134,11 +134,11 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
     this->rtt_info_.Init();
   }
 
-  msghdr *msgsend, msgrecv;
+  msghdr *msgsend, *msgrecv;
   // msgsend.msg_control = NULL;
   // msgsend.msg_controllen = 0;
   // msgsend.msg_flags = 0;
-  iovec iovsend[2], iovrecv[2];
+  // iovec iovsend[2], iovrecv[2];
   Header *sendhdr, *recvhdr;
   // msgsend.msg_name = this->sa_;
   // msgsend.msg_namelen = sizeof(*this->sa_);
@@ -157,17 +157,17 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
   msgsend = pbsend.GetResult();
 
   // set iovec for msgrecv
-  iovrecv[0].iov_base = &recvhdr;
-  iovrecv[0].iov_len = sizeof(Header);
-  iovrecv[1].iov_base = out_data->buff;
-  iovrecv[1].iov_len = out_data->len;
-  msgrecv.msg_iov = iovrecv;
-  msgrecv.msg_iovlen = 2;
+  // iovrecv[0].iov_base = &recvhdr;
+  // iovrecv[0].iov_len = sizeof(Header);
+  // iovrecv[1].iov_base = out_data->buff;
+  // iovrecv[1].iov_len = out_data->len;
+  // msgrecv.msg_iov = iovrecv;
+  // msgrecv.msg_iovlen = 2;
 
   PacketBuilder pbrecv(this->sa_);
   recvhdr = pbrecv.MakeHeader();
   pbrecv.MakeData(out_data);
-  msgsend = pbrecv.GetResult();
+  msgrecv = pbrecv.GetResult();
 
   this->rtt_info_.NewPack();
 
@@ -192,7 +192,7 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
         }
         isSendAgain = true;
       } else {
-        ssize_t recvSize = recvmsg(this->socket_fd_, &msgrecv, 0);
+        ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
         if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq) {
           waitTime -= this->rtt_info_.GetRelativeTs();
           if (waitTime < 0) break;
