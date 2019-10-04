@@ -8,6 +8,7 @@ BUILD := $(shell mkdir -p ./build;cd ./build;pwd)
 .PHONY: all test clean rebuild third_party
 
 all: 
+	git submodule init
 	make third_party
 	@for mod in $(BUILD_PATH); do\
 		cd $$mod && make && cd -;\
@@ -30,6 +31,7 @@ clean:
 	-rm -rf $(BUILD)
 	-find . -name "*.o"|xargs rm
 	-find . -name "*.a"|xargs rm
+	-cd ./third_party && make clean
 
 rebuild:
 	-make clean

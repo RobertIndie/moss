@@ -16,4 +16,6 @@ build_glog:
 	cp $(THIRD_BASE)/glog/.libs/libglog.so.0 /usr/lib
 
 clean:
+	cd $(THIRD_BASE)/googletest && git checkout . && git clean -xdf
+	cd $(THIRD_BASE)/glog && git checkout . && git clean -xdf
 	-rm -rf $(THIRD_BUILD)
