@@ -8,6 +8,7 @@ BUILD := $(shell mkdir -p ./build;cd ./build;pwd)
 .PHONY: all test clean rebuild third_party
 
 all: 
+	git submodule init
 	make third_party
 	@for mod in $(BUILD_PATH); do\
 		cd $$mod && make && cd -;\
