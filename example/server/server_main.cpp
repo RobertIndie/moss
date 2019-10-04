@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include "common/common.h"
+#include "util/util.h"
 
 const size_t MAXSIZE = 65535;
 char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
@@ -49,8 +50,10 @@ int old_main() {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
+  InitLogger(argv);
   UDPServerChannel channel;
   channel.Bind("0.0.0.0", 9877);
   channel.Serve(nullptr);
+  return 0;
 }

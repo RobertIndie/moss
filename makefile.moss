@@ -20,7 +20,7 @@ endif
 OBJ := $(SRC:%.cpp=%.o)
 ifeq ($(TARGET_TYPE),EXE)
 $(TARGET): $(OBJ)
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB_DIR) $(LIB) -o $(APP_DIR)/$(TARGET) $(OBJ)
+	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $(APP_DIR)/$(TARGET) $(OBJ) $(LIB)
 endif
 ifeq ($(TARGET_TYPE),LIB)
 $(TARGET): $(OBJ)
@@ -28,7 +28,7 @@ $(TARGET): $(OBJ)
 endif
 
 $(OBJ) : $(SRC)
-	$(CXX) $(CXXFLAGS) $(INC) $(LIB_DIR) $(LIB) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $@ -c $< $(LIB)
 
 .PHONY: clean
 

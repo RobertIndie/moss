@@ -81,6 +81,7 @@ class PacketBuilder {
   msghdr *GetResult() const;
 
  private:
+  sockaddr_in *_new_sa = nullptr;
   iovec *_iov = nullptr;
   Header *_header = nullptr;
   Data *_data = nullptr;
