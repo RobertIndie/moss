@@ -98,13 +98,15 @@ Data *PacketBuilder::MakeData(char *buff, size_t buff_size) {
   return data;
 }
 
-Data *PacketBuilder::MakeData(Data *data) {
+Data *const PacketBuilder::MakeData(Data *const data) {
   result->msg_iov[1].iov_base = data->buff;
   result->msg_iov[1].iov_len = data->len;
   return data;
 }
 
-msghdr *PacketBuilder::GetResult() const { return result; }
+msghdr *const PacketBuilder::GetResult() const { return result; }
+
+Data *const PacketBuilder::GetData() const { return _data; }
 
 PacketBuilder::~PacketBuilder() {
   DELETE_PTR(_new_sa);
@@ -219,6 +221,7 @@ int UDPServerChannel::Bind(std::string ip, unsigned short port) {
 }
 
 int UDPServerChannel::Serve(ServeFunc serve_func) {
+  if (serve_func == nullptr) LOG(FATAL) << "serve_func is null";
   int ret = 0;
   while (1) {
     PacketBuilder pbrecv(nullptr);
@@ -229,7 +232,8 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     if (recvSize == -1) PLOG(ERROR);
     PacketBuilder pbsend(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name));
     pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);
-    pbsend.MakeData(nullptr, 1);
+    Data *response = serve_func(pbrecv.GetData());
+    pbsend.MakeData(response);
     msghdr *msgsend = pbsend.GetResult();
     DLOG(INFO)
         << "Server recv and send:"
@@ -239,8 +243,9 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
         << LOG_NV("origin_port",
                   ntohs(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name)
                             ->sin_port))
-        << LOG_NV("seq", recvhdr->seq);
+        << LOG_VALUE(recvSize) << LOG_NV("seq", recvhdr->seq);
     ret = sendmsg(this->socket_fd_, msgsend, 0);
     if (ret == -1) PLOG(ERROR);
+    DELETE_PTR(response);
   }
 }
