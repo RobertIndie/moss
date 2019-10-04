@@ -1,11 +1,19 @@
 THIRD_BUILD = $(shell mkdir -p ./build;cd ./build;pwd)
 THIRD_BASE = $(shell pwd)
+THIRD_REPO := \
+	./googletest\
+	./glog\
 
 .PHONY: build clean
 
 build:
 	make build_googletest
 	make build_glog
+
+init_third_repo:
+	@for mod in $(THIRD_REPO); do\
+		cd $$mod && git pull origin master && git checkout master && cd -;\
+	done
 
 build_googletest:
 	mkdir -p ./build/googletest

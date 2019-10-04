@@ -15,11 +15,11 @@ all:
 
 debug:
 	@for mod in $(BUILD_PATH); do\
-		cd $$mod && git pull && git checkout master && make && cd -;\
+		cd $$mod && make && cd -;\
 	done
 
 third_party:
-	cd ./third_party/ && make && cd -;
+	cd ./third_party && make init_third_repo && make && cd -;
 
 test:
 	cd test/testcases && make
