@@ -8,15 +8,14 @@ BUILD := $(shell mkdir -p ./build;cd ./build;pwd)
 .PHONY: all test clean rebuild third_party
 
 all: 
-	git submodule update --recursive
-	make third_party
+	git submodule update --recursive && make third_party
 	@for mod in $(BUILD_PATH); do\
 		cd $$mod && make && cd -;\
 	done
 
 debug:
 	@for mod in $(BUILD_PATH); do\
-		cd $$mod && make && cd -;\
+		cd $$mod && git pull && git checkout master && make && cd -;\
 	done
 
 third_party:
