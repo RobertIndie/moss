@@ -16,7 +16,8 @@ build_googletest:
 
 build_glog:
 	cd $(THIRD_BASE)/glog && ./autogen.sh && ./configure && make
-	cp $(THIRD_BASE)/glog/.libs/libglog.so.0 /usr/lib
+	#cp $(THIRD_BASE)/glog/.libs/libglog.so.0 /usr/lib
+	export LD_LIBRARY_PATH=$(THIRD_BASE)/glog/.libs
 
 clean:
 	cd $(THIRD_BASE)/googletest && git checkout . && git clean -xdf
