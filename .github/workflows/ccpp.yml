@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: Build CI
 
 on: 
   push:
@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: make
-      run: cd src && make
+      run: make
