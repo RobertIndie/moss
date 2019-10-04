@@ -30,6 +30,7 @@ clean:
 	-rm -rf $(BUILD)
 	-find . -name "*.o"|xargs rm
 	-find . -name "*.a"|xargs rm
+	-cd ./third_party && make clean
 
 rebuild:
 	-make clean
