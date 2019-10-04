@@ -194,7 +194,10 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
       } else {
         ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
         if (recvSize == -1) PLOG(ERROR);
-        if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq) {
+        if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq ||
+            memcmp(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name),
+                   reinterpret_cast<sockaddr_in *>(msgsend->msg_name),
+                   sizeof(sockaddr_in)) != 0) {
           DLOG(ERROR) << "Receive packet error:" << LOG_VALUE(recvSize)
                       << LOG_VALUE(recvhdr->seq) << LOG_VALUE(sendhdr->seq);
           waitTime -= this->rtt_info_.GetRelativeTs();
