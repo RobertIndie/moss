@@ -10,11 +10,6 @@ build:
 	make build_googletest
 	make build_glog
 
-init_third_repo:
-	@for mod in $(THIRD_REPO); do\
-		cd $$mod && git pull origin master && git checkout master && cd -;\
-	done
-
 build_googletest:
 	mkdir -p ./build/googletest
 	cd $(THIRD_BUILD)/googletest && cmake $(THIRD_BASE)/googletest && make
