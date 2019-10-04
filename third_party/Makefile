@@ -12,7 +12,8 @@ build_googletest:
 	cd $(THIRD_BUILD)/googletest && cmake $(THIRD_BASE)/googletest && make
 
 build_glog:
-	cd $(THIRD_BASE)/glog && ./autogen.sh && ./configure && make && make install
+	cd $(THIRD_BASE)/glog && ./autogen.sh && ./configure && make
+	cp $(THIRD_BASE)/glog/.libs/libglog.so.0 /usr/lib
 
 clean:
 	-rm -rf $(THIRD_BUILD)
