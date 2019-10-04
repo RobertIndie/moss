@@ -142,6 +142,8 @@ int UDPClientChannel::Connect(std::string ip, unsigned short port) {
 }
 
 int UDPClientChannel::Send(Data *in_data, Data *out_data) {
+  timespec ts_start, ts_end;
+  clock_gettime(CLOCK_MONOTONIC, &ts_start);
   int ret = 0;
   if (this->reinit_rtt) {
     this->rtt_info_.Init();
@@ -164,9 +166,9 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
 
   ssize_t recvSize = 0;
   bool isSendAgain = true;
+  sendhdr->seq = this->seq_++;
   do {
     isSendAgain = false;
-    sendhdr->seq = 1;
     sendhdr->ts = this->rtt_info_.GetRelativeTs();
     ret = sendmsg(this->socket_fd_, msgsend, 0);
     if (ret == -1) PLOG(ERROR);
@@ -200,8 +202,12 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
       }
     } while (isContinueWait);
   } while (isSendAgain);
+  clock_gettime(CLOCK_MONOTONIC, &ts_end);
   // Send and recv packet success
-  DLOG(INFO) << "Send success:" << LOG_VALUE(sendhdr->seq);
+  DLOG(INFO) << "Send success:" << LOG_VALUE(sendhdr->seq)
+             << LOG_NV("delta_tv_msec",
+                       (ts_end.tv_sec - ts_start.tv_sec) * 1000 +
+                           (ts_end.tv_nsec - ts_start.tv_nsec) / 1000000);
   this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr->ts);
   return (recvSize - sizeof(Header));
 }
@@ -222,7 +228,7 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
     if (recvSize == -1) PLOG(ERROR);
     PacketBuilder pbsend(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name));
-    pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);  // todo
+    pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);
     pbsend.MakeData(nullptr, 1);
     msghdr *msgsend = pbsend.GetResult();
     DLOG(INFO)
