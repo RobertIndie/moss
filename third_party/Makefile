@@ -12,7 +12,7 @@ build_googletest:
 	cd $(THIRD_BUILD)/googletest && cmake $(THIRD_BASE)/googletest && make
 
 build_glog:
-	cd $(THIRD_BASE)/glog && ./autogen.sh && ./configure && make
+	cd $(THIRD_BASE)/glog && ./autogen.sh && ./configure && make && make install
 
 clean:
 	-rm -rf $(THIRD_BUILD)

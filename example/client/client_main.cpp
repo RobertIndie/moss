@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include "common/common.h"
+#include "util/util.h"
+
 const size_t MAXSIZE = 4096;
 int readable_timeo(int fd, int sec) {
   fd_set rset;
@@ -48,12 +50,13 @@ int old_main() {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
+  InitLogger(argv);
   UDPClientChannel channel;
-  channel.Connect("0.0.0.0", 9877);
+  channel.Connect("119.23.51.15", 9877);
   char send_buff[100];
   char recv_buff[100];
   Data send_data(send_buff, 100), recv_data(recv_buff, 100);
-  channel.Send(&send_data, &recv_data);
+  for (int i = 0; i < 100; i++) channel.Send(&send_data, &recv_data);
   return 0;
 }

@@ -8,6 +8,15 @@
 #endif
 #include <stdint.h>
 #include <sys/time.h>
+#include "glog/logging.h"
+
+inline void InitLogger(char *argv[]) {
+  FLAGS_logtostderr = 1;  // log to console
+  google::InitGoogleLogging(argv[0]);
+}
+
+#define LOG_VALUE(value) #value << "=" << value << " "
+#define LOG_NV(name, value) name << "=" << value << " "
 
 #define DELETE_PTR(ptr) \
   if (ptr != nullptr) delete ptr, ptr = nullptr

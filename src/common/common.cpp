@@ -65,6 +65,7 @@ PacketBuilder::PacketBuilder(sockaddr_in *sa) {
     this->result->msg_namelen = sizeof(*sa);
   } else {
     sockaddr_in *new_sa = new sockaddr_in;
+    _new_sa = new_sa;
     this->result->msg_name = new_sa;
     this->result->msg_namelen = sizeof(*new_sa);
   }
@@ -106,6 +107,7 @@ Data *PacketBuilder::MakeData(Data *data) {
 msghdr *PacketBuilder::GetResult() const { return result; }
 
 PacketBuilder::~PacketBuilder() {
+  DELETE_PTR(_new_sa);
   DELETE_PTR(_iov);
   DELETE_PTR(_header);
   DELETE_PTR(_data);
@@ -115,7 +117,11 @@ PacketBuilder::~PacketBuilder() {
 
 #pragma region UDPChannel
 void UDPChannel::SocketConnect(std::string ip, unsigned short port) {
-  this->socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+  int ret = 0;
+  LOG(INFO) << "Socket Connect: IP:" << ip << "\tPort:" << port;
+  ret = socket(AF_INET, SOCK_DGRAM, 0);
+  if (ret == -1) PLOG(ERROR);
+  this->socket_fd_ = ret;
   this->sa_->sin_family = AF_INET;
   // store this IP address in sa:
   inet_pton(AF_INET, ip.c_str(), &(this->sa_->sin_addr));
@@ -123,8 +129,10 @@ void UDPChannel::SocketConnect(std::string ip, unsigned short port) {
 }
 
 void UDPChannel::SocketBind() {
-  bind(this->socket_fd_, reinterpret_cast<sockaddr *>(this->sa_),
-       sizeof(*this->sa_));
+  int ret = 0;
+  ret = bind(this->socket_fd_, reinterpret_cast<sockaddr *>(this->sa_),
+             sizeof(*this->sa_));
+  if (ret < 0) PLOG(FATAL);
 }
 #pragma endregion
 
@@ -134,6 +142,7 @@ int UDPClientChannel::Connect(std::string ip, unsigned short port) {
 }
 
 int UDPClientChannel::Send(Data *in_data, Data *out_data) {
+  int ret = 0;
   if (this->reinit_rtt) {
     this->rtt_info_.Init();
   }
@@ -159,15 +168,20 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
     isSendAgain = false;
     sendhdr->seq = 1;
     sendhdr->ts = this->rtt_info_.GetRelativeTs();
-    std::cout << "Send:" << sendhdr->ts << std::endl;
-    sendmsg(this->socket_fd_, msgsend, 0);
+    ret = sendmsg(this->socket_fd_, msgsend, 0);
+    if (ret == -1) PLOG(ERROR);
     int waitTime = this->rtt_info_.Start();
+    DLOG(INFO) << "Client send:" << LOG_VALUE(sendhdr->seq)
+               << LOG_VALUE(waitTime);
     bool isContinueWait = false;
     do {
       isContinueWait = false;
       if (ReadableTimeout(this->socket_fd_, waitTime) == 0) {
+        DLOG(INFO) << "Timeout:" << LOG_VALUE(sendhdr->seq)
+                   << LOG_VALUE(this->rtt_info_.retransmitted_count);
         // timeout
         if (this->rtt_info_.Timeout() < 0) {
+          DLOG(ERROR) << "Send error.";
           this->reinit_rtt =
               true;   // reinit rtt_info in case we're called again
           return -1;  // send error
@@ -175,7 +189,10 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
         isSendAgain = true;
       } else {
         ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
+        if (recvSize == -1) PLOG(ERROR);
         if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq) {
+          DLOG(ERROR) << "Receive packet error:" << LOG_VALUE(recvSize)
+                      << LOG_VALUE(recvhdr->seq) << LOG_VALUE(sendhdr->seq);
           waitTime -= this->rtt_info_.GetRelativeTs();
           if (waitTime < 0) break;
           isContinueWait = true;
@@ -184,6 +201,7 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
     } while (isContinueWait);
   } while (isSendAgain);
   // Send and recv packet success
+  DLOG(INFO) << "Send success:" << LOG_VALUE(sendhdr->seq);
   this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr->ts);
   return (recvSize - sizeof(Header));
 }
@@ -195,16 +213,28 @@ int UDPServerChannel::Bind(std::string ip, unsigned short port) {
 }
 
 int UDPServerChannel::Serve(ServeFunc serve_func) {
+  int ret = 0;
   while (1) {
     PacketBuilder pbrecv(nullptr);
     Header *recvhdr = pbrecv.MakeHeader();
     pbrecv.MakeData(nullptr, 1452);
     msghdr *msgrecv = pbrecv.GetResult();
     ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
+    if (recvSize == -1) PLOG(ERROR);
     PacketBuilder pbsend(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name));
     pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);  // todo
     pbsend.MakeData(nullptr, 1);
     msghdr *msgsend = pbsend.GetResult();
-    sendmsg(this->socket_fd_, msgsend, 0);
+    DLOG(INFO)
+        << "Server recv and send:"
+        << LOG_NV("origin_ip:",
+                  inet_ntoa(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name)
+                                ->sin_addr))
+        << LOG_NV("origin_port",
+                  ntohs(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name)
+                            ->sin_port))
+        << LOG_NV("seq", recvhdr->seq);
+    ret = sendmsg(this->socket_fd_, msgsend, 0);
+    if (ret == -1) PLOG(ERROR);
   }
 }
