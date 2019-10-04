@@ -23,9 +23,14 @@ INC_GLOG := -I $(PROJ_BASE)/third_party/glog/src
 LIB_DIR_GLOG := -L $(PROJ_BASE)/third_party/glog/.libs
 LIB_GLOG := -lglog
 
+# protobuf lib
+INC_PROTOBUF := -I $(PROJ_BASE)/third_party/protobuf/src
+LIB_DIR_PROTOBUF := -L $(PROJ_BASE)/third_party/protobuf/src/.libs
+LIB_PROTOBUF := -lprotobuf
+
 # include path
-INC += $(INC_GLOG)
+INC += $(INC_GLOG) $(INC_PROTOBUF)
 # lib dir path
-LIB_DIR += $(LIB_PROJ) $(LIB_DIR_GLOG)
+LIB_DIR += $(LIB_PROJ) $(LIB_DIR_GLOG) $(LIB_DIR_PROTOBUF)
 # lib files
-LIB += $(LIB_GLOG)
+LIB += $(LIB_GLOG) $(LIB_PROTOBUF)

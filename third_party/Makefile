@@ -19,6 +19,9 @@ build_glog:
 	#cp $(THIRD_BASE)/glog/.libs/libglog.so.0 /usr/lib
 	export LD_LIBRARY_PATH=$(THIRD_BASE)/glog/.libs
 
+build_protobuf:
+	cd $(THIRD_BASE)/protobuf && git submodule update --init --recursive && ./autogen.sh && ./configure --disable-shared && make && make install
+
 clean:
 	cd $(THIRD_BASE)/googletest && git checkout . && git clean -xdf
 	cd $(THIRD_BASE)/glog && git checkout . && git clean -xdf
