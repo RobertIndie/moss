@@ -77,8 +77,9 @@ class PacketBuilder {
   Data *MakeData(char *data = nullptr,
                  size_t data_size = 0);  // if data is NULL, then PacketBuilder
                                          // will create memory for data.
-  Data *MakeData(Data *data);
-  msghdr *GetResult() const;
+  Data *const MakeData(Data *const data);
+  msghdr *const GetResult() const;
+  Data *const GetData() const;
 
  private:
   sockaddr_in *_new_sa = nullptr;
@@ -103,7 +104,7 @@ class ClientChannel : virtual public Channel {
   virtual int Send(Data *in_data, Data *out_data) = 0;
 };
 
-typedef Data *(*ServeFunc)(Data *);
+typedef Data *(*ServeFunc)(Data *const request);
 
 class ServerChannel : virtual public Channel {
  public:
