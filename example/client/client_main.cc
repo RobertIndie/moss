@@ -50,8 +50,43 @@ int old_main() {
   }
 }
 
+#include "protoc_test/test.pb.h"
+
+template <typename T>
+void Ser(T obj, std::stringstream *ss) {
+  obj.SerializeToOstream(ss);
+}
+
+int protoc_test() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  tutorial::AddressBook address_book;
+  tutorial::Person *person = address_book.add_people();
+  person->set_id(31);
+  *person->mutable_name() = "Aaron";
+  person->set_email("Robert.Aaron2017@outlook.com");
+  tutorial::Person::PhoneNumber *phone_number = person->add_phones();
+  phone_number->set_number("123");
+  phone_number->set_type(tutorial::Person::WORK);
+
+  std::cout << address_book.DebugString() << std::endl;
+
+  std::stringstream ss;
+  // address_book.SerializeToOstream(&ss);
+  Ser(address_book, &ss);
+  std::cout << "LENGTH:" << ss.str().length() << std::endl;
+  tutorial::AddressBook book2;
+  book2.ParseFromIstream(&ss);
+  std::cout << "LENGTH:" << ss.str().length() << std::endl;
+
+  std::cout << book2.DebugString() << std::endl;
+
+  google::protobuf::ShutdownProtobufLibrary();
+}
+
 int main(int argc, char **argv) {
   InitLogger(argv);
+  protoc_test();
   UDPClientChannel channel;
   channel.Connect("119.23.51.15", 9877);
   char send_buff[100];

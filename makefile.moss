@@ -14,10 +14,10 @@ endif
 
 ifeq ($(USE_SPEC_SRC),)
 SRC_DIRS = $(shell find . -type d)
-SRC += $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
+SRC += $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cc))
 endif
 
-OBJ := $(SRC:%.cpp=%.o)
+OBJ := $(SRC:%.cc=%.o)
 ifeq ($(TARGET_TYPE),EXE)
 $(TARGET): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $(APP_DIR)/$(TARGET) $(OBJ) $(LIB)
@@ -27,7 +27,7 @@ $(TARGET): $(OBJ)
 	$(AR) $(LIBS_DIR)/$(TARGET) $(OBJ)
 endif
 
-%.o : %.cpp
+%.o : %.cc
 	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $@ -c $< $(LIB)
 
 .PHONY: clean
