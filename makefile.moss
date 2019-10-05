@@ -27,7 +27,7 @@ $(TARGET): $(OBJ)
 	$(AR) $(LIBS_DIR)/$(TARGET) $(OBJ)
 endif
 
-$(OBJ) : $(SRC)
+%.o : %.cpp
 	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $@ -c $< $(LIB)
 
 .PHONY: clean

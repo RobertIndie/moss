@@ -26,6 +26,11 @@ test:
 	cd test/virtual_server && make
 	./build/apps/Test
 	
+debug_clean:
+	-rm -rf $(BUILD)
+	-find . -name "*.o"|xargs rm
+	-find . -name "*.a"|xargs rm
+
 clean:
 	-rm -rf $(BUILD)
 	-find . -name "*.o"|xargs rm
