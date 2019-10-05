@@ -21,8 +21,8 @@ class ClientProxy : virtual public Proxy {
 
 class ServerProxy : virtual public Proxy {
  public:
-  template <typename RequestType, typename ResponseType>
-  std::stringstream Call(std::stringstream in_data, void* func_ptr) {
+  template <typename RequestType, typename ResponseType, void* func_ptr>
+  std::stringstream Call(std::stringstream in_data) {
     typedef ResponseType (*call_func_type)(RequestType);
     RequestType req;
     req.ParseFromIstream(&in_data);
@@ -32,11 +32,13 @@ class ServerProxy : virtual public Proxy {
     return out_data;
   }
   template <typename RequestType, typename ResponseType>
-  int Register(HashName hashFuncName, ResponseType (*serve_func)(RequestType));
+  int Register(HashName hashFuncName, ResponseType (*serve_func)(RequestType)) {
+    this->func_map[hashFuncName] = &Call<RequestType, ResponseType, serve_func>;
+  }
   void Serve();
 
  private:
-  std::map<HashName, std::stringstream (*)(std::stringstream, void*)> func_map;
+  std::map<HashName, std::stringstream (*)(std::stringstream)> func_map;
 };
 
 #endif  // SRC_RPC_RPC_H_

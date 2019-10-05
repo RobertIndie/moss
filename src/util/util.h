@@ -50,4 +50,14 @@ inline int ReadableTimeout(int fd, int msec) {
 
 typedef unsigned int HashName;
 
+// BKDR Hash Function
+unsigned int BKDRHash(const char *str) {
+  unsigned int seed = 131;
+  unsigned int hash = 0;
+  while (*str) {
+    hash = hash * seed + (*str++);
+  }
+  return (hash & 0x7FFFFFFF);
+}
+
 #endif  // SRC_UTIL_UTIL_H_
