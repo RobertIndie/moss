@@ -48,4 +48,6 @@ inline int ReadableTimeout(int fd, int msec) {
   return ReadableTimeout(fd, msec / 1000, msec % 1000 * 1000);
 }
 
+typedef unsigned int HashName;
+
 #endif  // SRC_UTIL_UTIL_H_

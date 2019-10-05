@@ -134,7 +134,7 @@ class UDPServerChannel : public ServerChannel, public UDPChannel {
  public:
   UDPServerChannel() : Channel() {}
   int Bind(std::string ip, unsigned short port);
-  int Serve(ServeFunc serve_func) __attribute__((optimize(0)));
+  int Serve(ServeFunc serve_func);
 };
 
 #endif  // SRC_COMMON_COMMON_H_
