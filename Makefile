@@ -27,8 +27,8 @@ test:
 	
 debug_clean:
 	-rm -rf $(BUILD)
-	-find . -name "*.o"|xargs rm
-	-find . -name "*.a"|xargs rm
+	-find . -name "*.o" ! -path "./third_party/*"|xargs rm
+	-find . -name "*.a" ! -path "./third_party/*"|xargs rm
 
 clean:
 	-rm -rf $(BUILD)
