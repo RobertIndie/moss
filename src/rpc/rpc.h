@@ -23,7 +23,7 @@ class ServerProxy : virtual public Proxy {
   // the channel should be binded before proxy init
   explicit ServerProxy(ServerChannel* channel) : channel_(channel) {}
   template <typename RequestType, typename ResponseType, void* func_ptr>
-  std::strstringstreaming* Call(std::stringstream* in_data) {
+  std::stringstream* Call(std::stringstream* in_data) {
     typedef ResponseType (*call_func_type)(RequestType);
     RequestType req;
     req.ParseFromIstream(in_data);
