@@ -14,21 +14,17 @@
 #include "util/util.h"
 
 struct Data {
-  Data(char *buff, size_t len) : buff(buff), len(len), isFreeMem(false) {}
-  explicit Data(size_t len) : len(len), isFreeMem(true) {
-    this->buff = new char[len];
-  }
-  char *buff;
+  Data(const char *buff, size_t len) : cbuff(buff), len(len) {}
+  explicit Data(size_t len) : len(len) { this->buff = new char[len]; }
+  char *buff = nullptr;
+  const char *cbuff = nullptr;
   size_t len;
   ~Data() {
-    if (isFreeMem && buff != nullptr) {
+    if (buff != nullptr) {
       delete[] buff;
       buff = nullptr;
     }
   }
-
- private:
-  bool isFreeMem = false;
 };
 // min retransmit timeout value, in millisecond
 const int kRXTMin = 20;

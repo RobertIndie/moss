@@ -16,18 +16,20 @@ class ClientProxy : virtual public Proxy {
   ResponseType Call(std::string name, RequestType request);
 };
 
+Data* ServeHandle(void* context, Data* const request);
+
 class ServerProxy : virtual public Proxy {
  public:
   // the channel should be binded before proxy init
-  ServerProxy(ServerChannel* channel) : channel_(channel) {}
+  explicit ServerProxy(ServerChannel* channel) : channel_(channel) {}
   template <typename RequestType, typename ResponseType, void* func_ptr>
-  std::stringstream Call(std::stringstream in_data) {
+  std::strstringstreaming* Call(std::stringstream* in_data) {
     typedef ResponseType (*call_func_type)(RequestType);
     RequestType req;
-    req.ParseFromIstream(&in_data);
+    req.ParseFromIstream(in_data);
     ResponseType res = static_cast<call_func_type>(func_ptr)(req);
-    std::stringstream out_data;
-    res.SerializeToOstream(&out_data);
+    std::stringstream* out_data = new std::stringstream;
+    res.SerializeToOstream(out_data);
     return out_data;
   }
   template <typename RequestType, typename ResponseType>
@@ -35,10 +37,11 @@ class ServerProxy : virtual public Proxy {
     this->func_map[hashFuncName] = &Call<RequestType, ResponseType, serve_func>;
   }
   void Serve();
+  friend Data* ServeHandle(void* context, Data* const request);
 
  private:
   ServerChannel* channel_;
-  std::map<HashName, std::stringstream (*)(std::stringstream)> func_map;
+  std::map<HashName, std::stringstream* (*)(std::stringstream*)> func_map;
 };
 
 #endif  // SRC_RPC_RPC_H_
