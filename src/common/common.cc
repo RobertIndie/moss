@@ -252,3 +252,21 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     DELETE_PTR(response);
   }
 }
+
+#pragma region Factories
+
+ServerChannel *UDPChannelFactory::CreateServerChannel(std::string ip,
+                                                      unsigned int port) {
+  ServerChannel *sc = new UDPServerChannel;
+  sc->Bind(ip, port);
+  return sc;
+}
+
+ClientChannel *UDPChannelFactory::CreateClientChannel(std::string ip,
+                                                      unsigned int port) {
+  UDPClientChannel *cc = new UDPClientChannel;
+  cc->Connect(ip, port);
+  return cc;
+}
+#pragma endregion
+

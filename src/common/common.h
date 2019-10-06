@@ -137,4 +137,20 @@ class UDPServerChannel : public ServerChannel, public UDPChannel {
   int Serve(ServeFunc serve_func);
 };
 
+#pragma region Factories
+class ChannelFactory {
+ public:
+  virtual ServerChannel *CreateServerChannel(std::string ip,
+                                             unsigned int port) = 0;
+  virtual ClientChannel *CreateClientChannel(std::string ip,
+                                             unsigned int port) = 0;
+};
+
+class UDPChannelFactory : public ChannelFactory {
+ public:
+  ServerChannel *CreateServerChannel(std::string ip, unsigned int port);
+  ClientChannel *CreateClientChannel(std::string ip, unsigned int port);
+};
+#pragma endregion
+
 #endif  // SRC_COMMON_COMMON_H_

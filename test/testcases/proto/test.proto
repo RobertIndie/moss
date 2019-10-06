@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package tutorial;
+
+message SimpleMessage {
+  string header = 1;
+  int32 id = 2;
+  string body = 3;
+}

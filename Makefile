@@ -22,7 +22,7 @@ third_party:
 	cd ./third_party && make && cd -;
 
 test:
-	cd test/testcases && make
+	cd test/testcases && make build_proto && make
 	./build/apps/Test
 	
 debug_clean:
