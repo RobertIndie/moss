@@ -23,7 +23,6 @@ third_party:
 
 test:
 	cd test/testcases && make
-	cd test/virtual_server && make
 	./build/apps/Test
 	
 debug_clean:
