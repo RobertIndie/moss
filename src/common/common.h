@@ -104,12 +104,12 @@ class ClientChannel : virtual public Channel {
   virtual int Send(Data *in_data, Data *out_data) = 0;
 };
 
-typedef Data *(*ServeFunc)(Data *const request);
+typedef Data *(*ServeFunc)(void *context, Data *const request);
 
 class ServerChannel : virtual public Channel {
  public:
   virtual int Bind(std::string ip, unsigned short port) = 0;
-  virtual int Serve(ServeFunc serve_func) = 0;
+  virtual int Serve(void *context, ServeFunc serve_func) = 0;
 };
 
 class UDPChannel : virtual public Channel {
@@ -134,7 +134,7 @@ class UDPServerChannel : public ServerChannel, public UDPChannel {
  public:
   UDPServerChannel() : Channel() {}
   int Bind(std::string ip, unsigned short port);
-  int Serve(ServeFunc serve_func);
+  int Serve(void *context, ServeFunc serve_func);
 };
 
 #pragma region Factories

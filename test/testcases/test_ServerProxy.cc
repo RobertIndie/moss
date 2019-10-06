@@ -4,6 +4,6 @@
 #include "gtest/gtest.h"
 #include "rpc/rpc.h"
 
-TEST(ServerProxy, FunctionManagement) { 
-    ServerProxy prx; 
-}
+TEST(ServerProxy, FunctionManagement) { ServerProxy prx;
+
+ }

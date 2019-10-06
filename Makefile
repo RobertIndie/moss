@@ -29,11 +29,15 @@ debug_clean:
 	-rm -rf $(BUILD)
 	-find . -name "*.o" ! -path "./third_party/*"|xargs rm
 	-find . -name "*.a" ! -path "./third_party/*"|xargs rm
+	-find . -name "*.pb.h" ! -path "./third_party/*"|xargs rm
+	-find . -name "*.pb.cc" ! -path "./third_party/*"|xargs rm
 
 clean:
 	-rm -rf $(BUILD)
 	-find . -name "*.o"|xargs rm
 	-find . -name "*.a"|xargs rm
+	-find . -name "*.pb.h"|xargs rm
+	-find . -name "*.pb.cc"|xargs rm
 	-cd ./third_party && make clean
 
 rebuild:

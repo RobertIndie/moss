@@ -8,10 +8,7 @@
 #include "common/common.h"
 #include "util/util.h"
 
-class Proxy {
- public:
-  int Init(std::string ip, unsigned short port);
-};
+class Proxy {};
 
 class ClientProxy : virtual public Proxy {
  public:
@@ -21,6 +18,8 @@ class ClientProxy : virtual public Proxy {
 
 class ServerProxy : virtual public Proxy {
  public:
+  // the channel should be binded before proxy init
+  ServerProxy(ServerChannel* channel) : channel_(channel) {}
   template <typename RequestType, typename ResponseType, void* func_ptr>
   std::stringstream Call(std::stringstream in_data) {
     typedef ResponseType (*call_func_type)(RequestType);
@@ -38,6 +37,7 @@ class ServerProxy : virtual public Proxy {
   void Serve();
 
  private:
+  ServerChannel* channel_;
   std::map<HashName, std::stringstream (*)(std::stringstream)> func_map;
 };
 
