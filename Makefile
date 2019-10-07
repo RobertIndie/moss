@@ -19,7 +19,7 @@ debug:
 	done
 
 third_party:
-	cd ./third_party && make && cd -;
+	cd ./third_party && make build && cd -;
 
 test:
 	cd test/testcases && make build_proto && make

@@ -9,6 +9,7 @@ THIRD_REPO := \
 build:
 	make build_googletest
 	make build_glog
+	make build_protobuf
 
 build_googletest:
 	mkdir -p ./build/googletest
