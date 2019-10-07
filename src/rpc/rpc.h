@@ -8,6 +8,11 @@
 #include "common/common.h"
 #include "util/util.h"
 
+struct RequestHeader {
+  unsigned int func_name;
+};
+#define REQUEST_HEADER_LEN sizeof(RequestHeader)
+
 class Proxy {};
 
 class ClientProxy : virtual public Proxy {
