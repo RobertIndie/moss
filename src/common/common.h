@@ -16,6 +16,8 @@
 struct Data {
   Data(const char *buff, size_t len) : cbuff(buff), len(len) {}
   explicit Data(size_t len) : len(len) { this->buff = new char[len]; }
+  const char *GetBuff() { return buff == nullptr ? cbuff : buff; }
+  // TODO : let buff and cbuff be private
   char *buff = nullptr;
   const char *cbuff = nullptr;
   size_t len;
@@ -96,16 +98,16 @@ class Channel {
 
 class ClientChannel : virtual public Channel {
  public:
-  virtual int Connect(std::string ip, unsigned short port) = 0;
-  virtual int Send(Data *in_data, Data *out_data) = 0;
+  virtual int Connect(std::string ip, unsigned short port) {}
+  virtual int Send(Data *in_data, Data *out_data) {}
 };
 
 typedef Data *(*ServeFunc)(void *context, Data *const request);
 
 class ServerChannel : virtual public Channel {
  public:
-  virtual int Bind(std::string ip, unsigned short port) = 0;
-  virtual int Serve(void *context, ServeFunc serve_func) = 0;
+  virtual int Bind(std::string ip, unsigned short port) {}
+  virtual int Serve(void *context, ServeFunc serve_func) {}
 };
 
 class UDPChannel : virtual public Channel {
