@@ -223,7 +223,7 @@ int UDPServerChannel::Bind(std::string ip, unsigned short port) {
   this->SocketBind();
 }
 
-int UDPServerChannel::Serve(ServeFunc serve_func) {
+int UDPServerChannel::Serve(void *context, ServeFunc serve_func) {
   if (serve_func == nullptr) LOG(FATAL) << "serve_func is null";
   int ret = 0;
   while (1) {
@@ -235,7 +235,7 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     if (recvSize == -1) PLOG(ERROR);
     PacketBuilder pbsend(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name));
     pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);
-    Data *response = serve_func(pbrecv.GetData());
+    Data *response = serve_func(context, pbrecv.GetData());
     pbsend.MakeData(response);
     msghdr *msgsend = pbsend.GetResult();
     DLOG(INFO)
@@ -252,3 +252,20 @@ int UDPServerChannel::Serve(ServeFunc serve_func) {
     DELETE_PTR(response);
   }
 }
+
+#pragma region Factories
+
+ServerChannel *UDPChannelFactory::CreateServerChannel(std::string ip,
+                                                      unsigned int port) {
+  ServerChannel *sc = new UDPServerChannel;
+  sc->Bind(ip, port);
+  return sc;
+}
+
+ClientChannel *UDPChannelFactory::CreateClientChannel(std::string ip,
+                                                      unsigned int port) {
+  UDPClientChannel *cc = new UDPClientChannel;
+  cc->Connect(ip, port);
+  return cc;
+}
+#pragma endregion

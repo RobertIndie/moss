@@ -8,6 +8,7 @@
 #endif
 #include <stdint.h>
 #include <sys/time.h>
+#include <string>
 #include "glog/logging.h"
 
 inline void InitLogger(char *argv[]) {
@@ -46,6 +47,18 @@ inline int ReadableTimeout(int fd, int sec, int usec) {
 
 inline int ReadableTimeout(int fd, int msec) {
   return ReadableTimeout(fd, msec / 1000, msec % 1000 * 1000);
+}
+
+typedef unsigned int HashName;
+
+// BKDR Hash Function
+inline unsigned int BKDRHash(const char *str) {
+  unsigned int seed = 131;
+  unsigned int hash = 0;
+  while (*str) {
+    hash = hash * seed + (*str++);
+  }
+  return (hash & 0x7FFFFFFF);
 }
 
 #endif  // SRC_UTIL_UTIL_H_

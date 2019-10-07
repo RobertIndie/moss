@@ -14,21 +14,19 @@
 #include "util/util.h"
 
 struct Data {
-  Data(char *buff, size_t len) : buff(buff), len(len), isFreeMem(false) {}
-  explicit Data(size_t len) : len(len), isFreeMem(true) {
-    this->buff = new char[len];
-  }
-  char *buff;
+  Data(const char *buff, size_t len) : cbuff(buff), len(len) {}
+  explicit Data(size_t len) : len(len) { this->buff = new char[len]; }
+  const char *GetBuff() { return buff == nullptr ? cbuff : buff; }
+  // TODO(private) : let buff and cbuff be private
+  char *buff = nullptr;
+  const char *cbuff = nullptr;
   size_t len;
   ~Data() {
-    if (isFreeMem && buff != nullptr) {
+    if (buff != nullptr) {
       delete[] buff;
       buff = nullptr;
     }
   }
-
- private:
-  bool isFreeMem = false;
 };
 // min retransmit timeout value, in millisecond
 const int kRXTMin = 20;
@@ -100,16 +98,16 @@ class Channel {
 
 class ClientChannel : virtual public Channel {
  public:
-  virtual int Connect(std::string ip, unsigned short port) = 0;
-  virtual int Send(Data *in_data, Data *out_data) = 0;
+  virtual int Connect(std::string ip, unsigned short port) {}
+  virtual int Send(Data *in_data, Data *out_data) {}
 };
 
-typedef Data *(*ServeFunc)(Data *const request);
+typedef Data *(*ServeFunc)(void *context, Data *const request);
 
 class ServerChannel : virtual public Channel {
  public:
-  virtual int Bind(std::string ip, unsigned short port) = 0;
-  virtual int Serve(ServeFunc serve_func) = 0;
+  virtual int Bind(std::string ip, unsigned short port) {}
+  virtual int Serve(void *context, ServeFunc serve_func) {}
 };
 
 class UDPChannel : virtual public Channel {
@@ -134,7 +132,23 @@ class UDPServerChannel : public ServerChannel, public UDPChannel {
  public:
   UDPServerChannel() : Channel() {}
   int Bind(std::string ip, unsigned short port);
-  int Serve(ServeFunc serve_func) __attribute__((optimize(0)));
+  int Serve(void *context, ServeFunc serve_func);
 };
+
+#pragma region Factories
+class ChannelFactory {
+ public:
+  virtual ServerChannel *CreateServerChannel(std::string ip,
+                                             unsigned int port) = 0;
+  virtual ClientChannel *CreateClientChannel(std::string ip,
+                                             unsigned int port) = 0;
+};
+
+class UDPChannelFactory : public ChannelFactory {
+ public:
+  ServerChannel *CreateServerChannel(std::string ip, unsigned int port);
+  ClientChannel *CreateClientChannel(std::string ip, unsigned int port);
+};
+#pragma endregion
 
 #endif  // SRC_COMMON_COMMON_H_

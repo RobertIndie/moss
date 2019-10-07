@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package moss_test;
+
+message SimpleMessage {
+  string header = 1;
+  int32 id = 2;
+  string body = 3;
+}

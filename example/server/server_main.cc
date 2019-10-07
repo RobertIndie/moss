@@ -50,7 +50,7 @@ int old_main() {
   }
 }
 
-Data *handle(Data *const request) {
+Data *handle(void *context, Data *const request) {
   Data *response = new Data(1);
   return response;
 }
@@ -59,6 +59,6 @@ int main(int argc, char **argv) {
   InitLogger(argv);
   UDPServerChannel channel;
   channel.Bind("0.0.0.0", 9877);
-  channel.Serve(handle);
+  channel.Serve(nullptr, handle);
   return 0;
 }

@@ -37,3 +37,7 @@ third_party/build
 
 # Vscode
 .vscode
+
+# Protobuf
+*.pb.cc
+*.pb.h
