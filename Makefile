@@ -23,6 +23,8 @@ third_party:
 
 test:
 	cd test/testcases && make build_proto && make
+
+run_test:	
 	./build/apps/Test
 	
 debug_clean:

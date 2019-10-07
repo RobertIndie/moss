@@ -17,7 +17,7 @@ struct Data {
   Data(const char *buff, size_t len) : cbuff(buff), len(len) {}
   explicit Data(size_t len) : len(len) { this->buff = new char[len]; }
   const char *GetBuff() { return buff == nullptr ? cbuff : buff; }
-  // TODO : let buff and cbuff be private
+  // TODO(private) : let buff and cbuff be private
   char *buff = nullptr;
   const char *cbuff = nullptr;
   size_t len;

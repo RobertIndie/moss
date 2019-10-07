@@ -6,9 +6,11 @@
 #pragma region ServerProxy
 Data* ServeHandle(void* context, Data* const request) {
   ServerProxy* prx = reinterpret_cast<ServerProxy*>(context);
-  std::string str(request->buff, request->len);
   std::stringstream ss_req, ss_res;
-  ss_req << str;
+  const char* req_buff = request->GetBuff();
+  for (int i = 0; i < request->len; i++) {
+    ss_req << req_buff[i];
+  }
   RequestHeader req_hdr;
   char* req_hdr_mem = new char[REQUEST_HEADER_LEN];
   ss_req.read(req_hdr_mem, REQUEST_HEADER_LEN);

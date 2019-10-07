@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package tutorial;
+package moss_test;
 
 message SimpleMessage {
   string header = 1;
