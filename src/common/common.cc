@@ -192,7 +192,7 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
         }
         isSendAgain = true;
       } else {
-        ssize_t recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
+        recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
         if (recvSize == -1) PLOG(ERROR);
         if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq ||
             memcmp(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name),
