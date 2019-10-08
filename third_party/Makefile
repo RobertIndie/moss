@@ -21,7 +21,7 @@ build_glog:
 	export LD_LIBRARY_PATH=$(THIRD_BASE)/glog/.libs
 
 build_protobuf:
-	cd $(THIRD_BASE)/protobuf && git submodule update --init --recursive && ./autogen.sh && ./configure --disable-shared && make && make install
+	cd $(THIRD_BASE)/protobuf && git submodule update --init --recursive && ./autogen.sh && ./configure --disable-shared && make
 
 clean:
 	cd $(THIRD_BASE)/googletest && git checkout . && git clean -xdf
