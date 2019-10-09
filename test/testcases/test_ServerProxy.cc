@@ -48,6 +48,6 @@ int serve(std::stringstream* in_data, std::stringstream* out_data) {
 TEST(ServerProxy, FunctionManagement) {
   _Fack_ServerChannel fackChannel;
   ServerProxy prx(reinterpret_cast<ServerChannel*>(&fackChannel));
-  prx.Register(121, serve);
+  prx.Register("TestFunction", serve);
   prx.Serve();
 }
