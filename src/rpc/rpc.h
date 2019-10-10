@@ -14,6 +14,19 @@ struct RequestHeader {
   unsigned int func_name;
 };
 #define REQUEST_HEADER_LEN sizeof(RequestHeader)
+#define REG_FUNC(prx, func_name) prx.Register(#func_name, func_name)
+
+template <typename ProtoObjType>
+bool ConvertStreamToProtoObj(ProtoObjType* protoObj,
+                             std::stringstream* stream) {
+  return protoObj->ParseFromIstream(stream);
+}
+
+template <typename ProtoObjType>
+bool ConvertProtoObjToStream(ProtoObjType* protoObj,
+                             std::stringstream* stream) {
+  return protoObj->SerializeToOstream(stream);
+}
 
 class Proxy {};
 
@@ -31,9 +44,8 @@ class ClientProxy : virtual public Proxy {
     Data* request_data = new Data(request_str.c_str(), request_str.length());
     Data* response_data = new Data(RECV_DATA_SIZE);
     this->channel_->Send(request_data, response_data);
-    std::stringstream;
-    ss << std::string(response_data->GetBuff(), response_data->len);
-    ConvertStreamToProtoObj(ss, response);
+    ss_res << std::string(response_data->GetBuff(), response_data->len);
+    ConvertStreamToProtoObj(response, &ss_res);
     delete request_data;
     delete response_data;
     return 0;
@@ -57,17 +69,5 @@ class ServerProxy : virtual public Proxy {
   ServerChannel* channel_;
   std::map<HashName, ServeFuncType> func_map;
 };
-
-template <typename ProtoObjType>
-bool ConvertStreamToProtoObj(ProtoObjType* protoObj,
-                             std::stringstream* stream) {
-  return protoObj->ParseFromIstream(stream);
-}
-
-template <typename ProtoObjType>
-bool ConvertProtoObjToStream(ProtoObjType* protoObj,
-                             std::stringstream* stream) {
-  return protoObj->SerializeToOstream(stream);
-}
 
 #endif  // SRC_RPC_RPC_H_

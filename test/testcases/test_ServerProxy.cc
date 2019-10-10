@@ -2,7 +2,7 @@
  * Copyright 2019 Aaron Robert
  * */
 #include "gtest/gtest.h"
-#include "proto/test.pb.h"
+#include "./test.pb.h"
 #include "rpc/rpc.h"
 
 class _Fack_ServerChannel : public ServerChannel {
@@ -47,7 +47,7 @@ int serve(std::stringstream* in_data, std::stringstream* out_data) {
 
 TEST(ServerProxy, FunctionManagement) {
   _Fack_ServerChannel fackChannel;
-  ServerProxy prx(reinterpret_cast<ServerChannel*>(&fackChannel));
+  ServerProxy prx(&fackChannel);
   prx.Register("TestFunction", serve);
   prx.Serve();
 }

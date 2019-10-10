@@ -218,6 +218,8 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
 }
 #pragma endregion
 
+#pragma region UDPServerChannel
+
 int UDPServerChannel::Bind(std::string ip, unsigned short port) {
   this->SocketConnect(ip, port);
   this->SocketBind();
@@ -252,6 +254,8 @@ int UDPServerChannel::Serve(void *context, ServeFunc serve_func) {
     DELETE_PTR(response);
   }
 }
+
+#pragma endregion
 
 #pragma region Factories
 
