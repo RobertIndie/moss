@@ -1,62 +1,168 @@
-/**
- * Copyright 2019 Aaron Robert
- * */
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
 #include "common/common.h"
-#include "util/util.h"
+#include <iostream>
+#include <string>
+#include <time.h>
 
-const size_t MAXSIZE = 4096;
-int readable_timeo(int fd, int sec) {
-  fd_set rset;
-  timeval tv;
-  FD_ZERO(&rset);
-  FD_SET(fd, &rset);
-  tv.tv_sec = sec;
-  tv.tv_usec = 0;
-  return select(fd + 1, &rset, NULL, NULL, &tv);
+
+
+class Client {
+	public:
+		Client(const std::string& name ="User00",
+		       const std::string& ServerIP = "47.94.89.84",
+			   const unsigned short& ServePort = 9421);
+		~Client();
+
+	public:
+		void run();
+
+	private:
+		void core();
+		void SelfControlSend(const std::string& DirID);
+		void autoRequest();
+		Data* Packag(const std::string& str);
+
+	private:
+		ssize_t SendAndRecv();
+	private:
+		UDPClientChannel channel;
+
+    //服务器的信息
+	private:
+		std::string ServerAddress;
+		unsigned short ServerPort;
+
+	private:
+		std::string UserID;
+	private:
+		Data * recv_data = nullptr;
+		Data * send_data = nullptr;
+};
+enum CONST_ {RecvBuff = 1024,SEN=5};
+Client::Client(const std::string& UserID,
+				const std::string& ServerIP,
+				const unsigned short& Port)
+				:ServerAddress(ServerIP),ServerPort(Port),UserID(UserID)
+				{
+					channel.Connect(this->ServerAddress,this->ServerPort);
+					char * recv_buff = new char[RecvBuff]{'\0'};
+					this->recv_data = new Data(recv_buff,RecvBuff);
+					if(this->recv_data == nullptr)
+					{
+						std::cout<<"Creating Data Failed"<<std::endl;
+					}
+				}
+Client::~Client()
+{
+	if(recv_data != nullptr)
+		delete recv_data;
+	if(send_data != nullptr)
+		delete send_data;
+}
+ssize_t Client::SendAndRecv()
+{
+	channel.Send(this->send_data,this->recv_data);
 }
 
-int old_main() {
-  int totalPacket = 0, ackPacket = 0;
-  int iSockfd = socket(AF_INET, SOCK_DGRAM, 0);
-  sockaddr_in *sSvrAddr = new sockaddr_in;
-  sSvrAddr->sin_family = AF_INET;
-  sSvrAddr->sin_addr.s_addr = htonl(1998009103);
-  sSvrAddr->sin_port = htons(9877);
-  int n;
-  char data[] = {0x01, 0x02};
-  char data2[50000];
-  for (int i = 0; i < 2; i++) {
-    std::cout << "ACK/TOTAL: " << ackPacket << "/" << totalPacket << " "
-              << ackPacket * 1.0 / totalPacket << std::endl;
-    totalPacket++;
-    n = sendto(iSockfd, data2, sizeof(data2), 0,
-               reinterpret_cast<sockaddr *>(sSvrAddr), sizeof(*sSvrAddr));
-    if (n == -1) continue;
-    char ackData[1];
-    if (readable_timeo(iSockfd, 1) == 0) {
-      std::cout << "Timeout" << std::endl;
-      continue;
-    }
-    n = recvfrom(iSockfd, ackData, sizeof(ackData), 0, NULL, NULL);
-    if (n == -1) continue;
-    if (ackData[0] == 0x01) ackPacket++;
-  }
+Data* Client::Packag(const std::string & str)
+{
+	char * C_str = new char[str.length() + 1];
+	for(int i = 0 ;i <= str.length() +1 ; ++i)
+	{
+		*(C_str + i) = str[i];
+	}
+	if(C_str != nullptr && (this->send_data = new Data(C_str,str.length()+1)) == nullptr)
+	{
+		std::cout<<"Creating Data failed!!"<<std::endl;
+		return nullptr;
+	}
+	else {
+		//std::cout<<this->recv_data<<std::endl;
+		return this->send_data;
+	}
+	
 }
 
-int main(int argc, char **argv) {
-  InitLogger(argv);
-  UDPClientChannel channel;
-  channel.Connect("119.23.51.15", 9877);
-  char send_buff[100];
-  char recv_buff[100];
-  Data send_data(send_buff, 100), recv_data(recv_buff, 100);
-  for (int i = 0; i < 100; i++) channel.Send(&send_data, &recv_data);
-  return 0;
+void Client::SelfControlSend(const std::string& DirID)
+{
+	std::cout<<"please Enter context:"<<std::endl;
+	std::string str;
+	std::cin >> str;
+
+	std::string Header = DirID + std::string("\t") + this->UserID + std::string("\t");
+	std::string result = Header + str;
+
+	std::cout<<result<<std::endl;
+
+	Packag(result);
+	//std::cout<<"this"<<std::endl;
+
+	this->SendAndRecv();
+}
+
+void Client::autoRequest()
+{
+	std::cout<<"SendToAutoRequest"<<std::endl;
+	this->Packag(std::string("Request:")+this->UserID);
+	this->SendAndRecv();
+
+
+		std::cout<<"OutPut:Message"<<std::endl;
+		for (unsigned int i = 0; i <= this->recv_data->len &&
+			*(this->recv_data->buff) != '\0'; ++i)
+		{
+		std::cout << *(this->recv_data->buff + i);
+		}
+		std::cout << std::endl;
+	
+}
+
+void Client::run()
+{
+	bool flag = true;
+
+	char c;
+	while(flag)
+	{
+		std::cout<<"what do you want to do:\n"
+				 <<"u : SendMessageToUser\n"
+				 <<"a : SendRequest"
+				 <<"q : quit\n"
+				 <<std::endl;
+		//this->autoRequest();
+		std::cin>>c;
+		switch(c)
+		{
+			case 'q':
+			case 'Q':
+					flag = false;
+					break;
+			case 'u':
+			case 'U':
+					this->core();
+					break;
+			case 'a':
+			case 'A':
+					this->autoRequest();
+					break;
+		}
+	}
+	
+}
+
+void Client::core()
+{
+	std::cout<<"please enter UserID:"<<std::endl;
+	std::string DirID;
+	std::cin>>DirID;
+	this->SelfControlSend(DirID);
+	//this->autoRequest();
+}
+
+int main(int argc,char** argv)
+{
+	InitLogger(argv);
+	Client client("ID","47.94.89.84");
+	client.run();
+	return 0;
 }
