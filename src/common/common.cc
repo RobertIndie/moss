@@ -99,7 +99,7 @@ Data *PacketBuilder::MakeData(char *buff, size_t buff_size) {
 }
 
 Data *const PacketBuilder::MakeData(Data *const data) {
-  result->msg_iov[1].iov_base = data->buff;
+  result->msg_iov[1].iov_base = const_cast<char *>(data->GetBuff());
   result->msg_iov[1].iov_len = data->len;
   return data;
 }
