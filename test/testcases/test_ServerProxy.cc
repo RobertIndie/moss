@@ -13,8 +13,8 @@ class _Fack_ServerChannel : public ServerChannel {
     req.set_header("GET");
     req.set_id(12138);
     req.set_body("Login");
-    RequestHeader req_hdr{121};
-    char* hdr_mem = new char[sizeof(REQUEST_HEADER_LEN)];
+    RequestHeader req_hdr{BKDRHash("TestFunction")};
+    char* hdr_mem = new char[REQUEST_HEADER_LEN];
     memcpy(hdr_mem, &req_hdr, REQUEST_HEADER_LEN);
     std::stringstream ss;
     std::string req_str;

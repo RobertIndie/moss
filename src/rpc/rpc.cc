@@ -19,8 +19,17 @@ Data* ServeHandle(void* context, Data* const request) {
   char req_hdr_mem[REQUEST_HEADER_LEN];
   ss_req.read(req_hdr_mem, REQUEST_HEADER_LEN);
   memcpy(&req_hdr, req_hdr_mem, REQUEST_HEADER_LEN);
-  prx->func_map[req_hdr.func_name](&ss_req, &ss_res);
+  DLOG(INFO) << "Call Function" << LOG_VALUE(req_hdr.func_name);
+  auto func = prx->func_map.find(req_hdr.func_name);
+  if (func != prx->func_map.end()) {
+    func->second(&ss_req, &ss_res);
+  } else {
+    DLOG(ERROR) << "Could not find function:" << LOG_VALUE(req_hdr.func_name);
+    return new Data(0);  // TODO(Exception): need throw expection
+  }
   std::string response_str = ss_res.str();
+  DLOG(INFO) << "Call Function Result:" << LOG_VALUE(req_hdr.func_name)
+             << LOG_VALUE(response_str.length());
   Data* response_data = new Data(response_str.c_str(), response_str.length());
   return response_data;
 }

@@ -37,13 +37,19 @@ class ClientProxy : virtual public Proxy {
   int Call(std::string name, RequestType* request, ResponseType* response) {
     std::stringstream ss_req, ss_res;
     RequestHeader req_hdr;
+    auto hash_func_name = BKDRHash(name.c_str());
+    req_hdr.func_name = hash_func_name;
     char req_hdr_mem[REQUEST_HEADER_LEN];
+    memcpy(req_hdr_mem, &req_hdr, REQUEST_HEADER_LEN);
     ss_req.write(req_hdr_mem, REQUEST_HEADER_LEN);
     ConvertProtoObjToStream(request, &ss_req);
     std::string request_str = ss_req.str();
     Data* request_data = new Data(request_str.c_str(), request_str.length());
     Data* response_data = new Data(RECV_DATA_SIZE);
+    DLOG(INFO) << "Call Function" << LOG_VALUE(hash_func_name);
     this->channel_->Send(request_data, response_data);
+    DLOG(INFO) << "Call Function Result" << LOG_VALUE(hash_func_name)
+               << LOG_VALUE(response_data->len);
     ss_res << std::string(response_data->GetBuff(), response_data->len);
     ConvertStreamToProtoObj(response, &ss_res);
     delete request_data;

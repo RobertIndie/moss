@@ -7,7 +7,7 @@
 
 TEST(ServerProxy, P2PConnection) {
   UDPClientChannel channel;
-  channel.Connect("0.0.0.0", 9877);
+  channel.Connect("127.0.0.1", 9877);
   ClientProxy prx(&channel);
   moss_test::SimpleMessage req, res;
   req.set_header("GET");
