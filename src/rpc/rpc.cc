@@ -3,6 +3,10 @@
  * */
 #include "rpc/rpc.h"
 
+#pragma region ClientProxy
+
+#pragma endregion
+
 #pragma region ServerProxy
 Data* ServeHandle(void* context, Data* const request) {
   ServerProxy* prx = reinterpret_cast<ServerProxy*>(context);
@@ -12,18 +16,26 @@ Data* ServeHandle(void* context, Data* const request) {
     ss_req << req_buff[i];
   }
   RequestHeader req_hdr;
-  char* req_hdr_mem = new char[REQUEST_HEADER_LEN];
+  char req_hdr_mem[REQUEST_HEADER_LEN];
   ss_req.read(req_hdr_mem, REQUEST_HEADER_LEN);
   memcpy(&req_hdr, req_hdr_mem, REQUEST_HEADER_LEN);
-  prx->func_map[req_hdr.func_name](&ss_req, &ss_res);
+  DLOG(INFO) << "Call Function" << LOG_VALUE(req_hdr.func_name);
+  auto func = prx->func_map.find(req_hdr.func_name);
+  if (func != prx->func_map.end()) {
+    func->second(&ss_req, &ss_res);
+  } else {
+    DLOG(ERROR) << "Could not find function:" << LOG_VALUE(req_hdr.func_name);
+    return new Data(0);  // TODO(Exception): need throw expection
+  }
   std::string response_str = ss_res.str();
+  DLOG(INFO) << "Call Function Result:" << LOG_VALUE(req_hdr.func_name)
+             << LOG_VALUE(response_str.length());
   Data* response_data = new Data(response_str.c_str(), response_str.length());
-  delete req_hdr_mem;
   return response_data;
 }
 
-int ServerProxy::Register(HashName func_name, ServeFuncType serve_func) {
-  this->func_map[func_name] = serve_func;
+int ServerProxy::Register(std::string func_name, ServeFuncType serve_func) {
+  this->func_map[BKDRHash(func_name.c_str())] = serve_func;
   return 0;
 }
 

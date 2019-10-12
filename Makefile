@@ -5,7 +5,7 @@ BUILD_PATH := \
 
 BUILD := $(shell mkdir -p ./build;cd ./build;pwd)
 
-.PHONY: all test clean rebuild third_party
+.PHONY: all test clean rebuild third_party debug build_test run_test debug_clean
 
 all: 
 	git submodule update --init --recursive && make third_party
@@ -22,10 +22,15 @@ third_party:
 	cd ./third_party && make build && cd -;
 
 test:
-	cd test/testcases && make build_proto && make
+	make build_test
+	make run_test
+
+build_test:
+	make debug
+	cd test && make build_test
 
 run_test:	
-	./build/apps/Test
+	cd test && make run_test
 	
 debug_clean:
 	-rm -rf $(BUILD)

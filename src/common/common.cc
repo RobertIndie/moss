@@ -99,7 +99,7 @@ Data *PacketBuilder::MakeData(char *buff, size_t buff_size) {
 }
 
 Data *const PacketBuilder::MakeData(Data *const data) {
-  result->msg_iov[1].iov_base = data->buff;
+  result->msg_iov[1].iov_base = const_cast<char *>(data->GetBuff());
   result->msg_iov[1].iov_len = data->len;
   return data;
 }
@@ -176,7 +176,7 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
     if (ret == -1) PLOG(ERROR);
     int waitTime = this->rtt_info_.Start();
     DLOG(INFO) << "Client send:" << LOG_VALUE(sendhdr->seq)
-               << LOG_VALUE(waitTime);
+               << LOG_VALUE(in_data->len) << LOG_VALUE(waitTime);
     bool isContinueWait = false;
     do {
       isContinueWait = false;
@@ -195,11 +195,18 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
         recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
         if (recvSize == -1) PLOG(ERROR);
         if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq ||
-            memcmp(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name),
-                   reinterpret_cast<sockaddr_in *>(msgsend->msg_name),
-                   sizeof(sockaddr_in)) != 0) {
+            memcmp(msgrecv->msg_name, msgsend->msg_name, 8) != 0) {
           DLOG(ERROR) << "Receive packet error:" << LOG_VALUE(recvSize)
-                      << LOG_VALUE(recvhdr->seq) << LOG_VALUE(sendhdr->seq);
+                      << LOG_VALUE(sizeof(Header)) << LOG_VALUE(recvhdr->seq)
+                      << LOG_VALUE(sendhdr->seq)
+                      << LOG_NV("msgrecv->msgname:",
+                                inet_ntoa(reinterpret_cast<sockaddr_in *>(
+                                              msgrecv->msg_name)
+                                              ->sin_addr))
+                      << LOG_NV("msgsend->msg_name:",
+                                inet_ntoa(reinterpret_cast<sockaddr_in *>(
+                                              msgsend->msg_name)
+                                              ->sin_addr));
           waitTime -= this->rtt_info_.GetRelativeTs();
           if (waitTime < 0) break;
           isContinueWait = true;
@@ -214,9 +221,12 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
                        (ts_end.tv_sec - ts_start.tv_sec) * 1000 +
                            (ts_end.tv_nsec - ts_start.tv_nsec) / 1000000);
   this->rtt_info_.Stop(this->rtt_info_.GetRelativeTs() - recvhdr->ts);
+  out_data->len = recvSize - sizeof(Header);
   return (recvSize - sizeof(Header));
 }
 #pragma endregion
+
+#pragma region UDPServerChannel
 
 int UDPServerChannel::Bind(std::string ip, unsigned short port) {
   this->SocketConnect(ip, port);
@@ -235,11 +245,8 @@ int UDPServerChannel::Serve(void *context, ServeFunc serve_func) {
     if (recvSize == -1) PLOG(ERROR);
     PacketBuilder pbsend(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name));
     pbsend.MakeHeader(recvhdr->seq, recvhdr->ts);
-    Data *response = serve_func(context, pbrecv.GetData());
-    pbsend.MakeData(response);
-    msghdr *msgsend = pbsend.GetResult();
     DLOG(INFO)
-        << "Server recv and send:"
+        << "Server recv:"
         << LOG_NV("origin_ip:",
                   inet_ntoa(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name)
                                 ->sin_addr))
@@ -247,11 +254,16 @@ int UDPServerChannel::Serve(void *context, ServeFunc serve_func) {
                   ntohs(reinterpret_cast<sockaddr_in *>(msgrecv->msg_name)
                             ->sin_port))
         << LOG_VALUE(recvSize) << LOG_NV("seq", recvhdr->seq);
+    Data *response = serve_func(context, pbrecv.GetData());
+    pbsend.MakeData(response);
+    msghdr *msgsend = pbsend.GetResult();
     ret = sendmsg(this->socket_fd_, msgsend, 0);
     if (ret == -1) PLOG(ERROR);
     DELETE_PTR(response);
   }
 }
+
+#pragma endregion
 
 #pragma region Factories
 
