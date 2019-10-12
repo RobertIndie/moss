@@ -1,6 +1,6 @@
 CXX = g++
 AR = ar crv
-CXXFLAGS = -std=c++11 -g -O0
+CXXFLAGS = -std=c++11 -g -O2
 ifeq ($(PROJ_BASE),)
 PROJ_BASE := .
 endif
