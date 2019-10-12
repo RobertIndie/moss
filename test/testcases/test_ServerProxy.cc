@@ -2,7 +2,7 @@
  * Copyright 2019 Aaron Robert
  * */
 #include "gtest/gtest.h"
-#include "proto/test.pb.h"
+#include "./test.pb.h"
 #include "rpc/rpc.h"
 
 class _Fack_ServerChannel : public ServerChannel {
@@ -13,8 +13,8 @@ class _Fack_ServerChannel : public ServerChannel {
     req.set_header("GET");
     req.set_id(12138);
     req.set_body("Login");
-    RequestHeader req_hdr{121};
-    char* hdr_mem = new char[sizeof(REQUEST_HEADER_LEN)];
+    RequestHeader req_hdr{BKDRHash("TestFunction")};
+    char* hdr_mem = new char[REQUEST_HEADER_LEN];
     memcpy(hdr_mem, &req_hdr, REQUEST_HEADER_LEN);
     std::stringstream ss;
     std::string req_str;
@@ -47,7 +47,7 @@ int serve(std::stringstream* in_data, std::stringstream* out_data) {
 
 TEST(ServerProxy, FunctionManagement) {
   _Fack_ServerChannel fackChannel;
-  ServerProxy prx(reinterpret_cast<ServerChannel*>(&fackChannel));
-  prx.Register(121, serve);
+  ServerProxy prx(&fackChannel);
+  prx.Register("TestFunction", serve);
   prx.Serve();
 }

@@ -28,6 +28,10 @@ INC_PROTOBUF := -I $(PROJ_BASE)/third_party/protobuf/src
 LIB_DIR_PROTOBUF := -L $(PROJ_BASE)/third_party/protobuf/src/.libs
 LIB_PROTOBUF := -lprotobuf
 
+# Test proto
+INC_TEST_PROTO := -I $(PROJ_BASE)/test/proto
+LIB_TEST_PROTO := -lTestProto
+
 # include path
 INC += $(INC_GLOG) $(INC_PROTOBUF)
 # lib dir path

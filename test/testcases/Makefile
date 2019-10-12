@@ -4,16 +4,8 @@ include $(PROJ_BASE)/makefile.libs
 TARGET_TYPE := EXE
 TARGET := Test
 
-INC += $(INC_MOSS) $(INC_GTEST) -I .
+INC += $(INC_MOSS) $(INC_GTEST) $(INC_TEST_PROTO)
 LIB_DIR += $(LIB_DIR_GTEST)
-LIB += $(LIB_MOSS) $(LIB_GTEST)
-
-PROTOC := protoc
-PROTO_DIR := ./proto
+LIB := $(LIB_TEST_PROTO) $(LIB_MOSS) $(LIB_GTEST) $(LIB)
 
 include $(PROJ_BASE)/makefile.moss
-
-.PHONY: build_proto
-
-build_proto:
-	cd $(PROTO_DIR) && $(PROTOC) --cpp_out=. *.proto
