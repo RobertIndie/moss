@@ -52,7 +52,6 @@ int old_main() {
 
 int main(int argc, char **argv) {
   InitLogger(argv);
-  // protoc_test();
   UDPClientChannel channel;
   channel.Connect("119.23.51.15", 9877);
   char send_buff[100];
