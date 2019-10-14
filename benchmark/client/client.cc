@@ -1,6 +1,7 @@
 /**
  * Copyright 2019 Aaron Robert
  * */
+#define NDEBUG
 #include <stdio.h>
 #include <vector>
 #include "./login.pb.h"
@@ -9,6 +10,7 @@
 
 void proc(int id, std::fstream &fs_err, std::fstream &fs_result, const char *ip,
           int port) {
+  printf("Proc %d started.\n", id);
   UDPClientChannel channel;
   channel.Connect(ip, port);
   ClientProxy prx(&channel);
@@ -17,8 +19,8 @@ void proc(int id, std::fstream &fs_err, std::fstream &fs_result, const char *ip,
     benchmark_test::LoginResult res;
     req.set_id(12138);
     req.set_password("123456");
-    prx.Call("Login", &req, &res);
-    if (res.code() == 0 && res.error() == "No Error") {
+    int ret = prx.Call("Login", &req, &res);
+    if (ret != -1 && res.code() == 0 && res.error() == "No Error") {
       fs_result << id << ":Sent" << std::endl;
     } else {
       fs_err << id << ":ERROR" << std::endl;
@@ -27,10 +29,11 @@ void proc(int id, std::fstream &fs_err, std::fstream &fs_result, const char *ip,
 }
 
 int main(int argc, char *argv[]) {
+  FLAGS_stderrthreshold = 2;
   std::fstream fs_err("./error.txt");
   std::fstream fs_result("./result.txt");
   if (!fs_err.is_open()) {
-    printf("output.txt dose not exist!\n");
+    printf("error.txt dose not exist!\n");
     return -1;
   }
   if (!fs_result.is_open()) {
@@ -48,23 +51,27 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  std::vector<pid_t> pids;
+  pid_t *pids = new pid_t[proccnt];
   bool isParent = false;
+  int _pcnt = 0;
   for (int i = 0; i < proccnt; i++) {
     pid_t pid = fork();
     if (pid > 0) {
-      pids.push_back(pid);
-      isParent = true;
+      pids[i] = pid;
+      _pcnt++;
+      printf("Pushed %d\n", pid);
+      break;
     } else if (pid < 0) {
       printf("Create proc error!\n");
+      break;
     }
     proc(i, fs_err, fs_result, ip, port);
   }
-  if (isParent) {
-    sleep(10);
-    for (std::vector<pid_t>::iterator iter; iter != pids.end(); iter++) {
-      kill(*iter, SIGABRT);
-    }
+  sleep(1);
+  for (int i = 0; i < _pcnt; i++) {
+    int ret = kill(pids[i], SIGKILL);
+    if (ret == -1) PLOG(ERROR);
   }
+  delete[] pids;
   return 0;
 }
