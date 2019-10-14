@@ -60,18 +60,20 @@ int main(int argc, char *argv[]) {
       pids[i] = pid;
       _pcnt++;
       printf("Pushed %d\n", pid);
-      break;
+      continue;
     } else if (pid < 0) {
       printf("Create proc error!\n");
       break;
     }
     proc(i, fs_err, fs_result, ip, port);
   }
-  sleep(1);
+  sleep(10);
   for (int i = 0; i < _pcnt; i++) {
     int ret = kill(pids[i], SIGKILL);
     if (ret == -1) PLOG(ERROR);
   }
+  fs_err.close();
+  fs_result.close();
   delete[] pids;
   return 0;
 }
