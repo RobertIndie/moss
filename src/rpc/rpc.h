@@ -47,7 +47,10 @@ class ClientProxy : virtual public Proxy {
     Data* request_data = new Data(request_str.c_str(), request_str.length());
     Data* response_data = new Data(RECV_DATA_SIZE);
     DLOG(INFO) << "Call Function" << LOG_VALUE(hash_func_name);
-    this->channel_->Send(request_data, response_data);
+    int ret = this->channel_->Send(request_data, response_data);
+    if (ret == -1) {
+      return -1;
+    }
     DLOG(INFO) << "Call Function Result" << LOG_VALUE(hash_func_name)
                << LOG_VALUE(response_data->len);
     ss_res << std::string(response_data->GetBuff(), response_data->len);

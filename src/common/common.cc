@@ -194,16 +194,16 @@ int UDPClientChannel::Send(Data *in_data, Data *out_data) {
       } else {
         recvSize = recvmsg(this->socket_fd_, msgrecv, 0);
         if (recvSize == -1) PLOG(ERROR);
-        if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq ||
-            memcmp(msgrecv->msg_name, msgsend->msg_name, 8) != 0) {
+        if (recvSize < sizeof(Header) || recvhdr->seq != sendhdr->seq
+            /*|| memcmp(msgrecv->msg_name, msgsend->msg_name, 8) != 0*/) {
           DLOG(ERROR) << "Receive packet error:" << LOG_VALUE(recvSize)
                       << LOG_VALUE(sizeof(Header)) << LOG_VALUE(recvhdr->seq)
                       << LOG_VALUE(sendhdr->seq)
-                      << LOG_NV("msgrecv->msgname:",
+                      << LOG_NV("msgrecv->msgname",
                                 inet_ntoa(reinterpret_cast<sockaddr_in *>(
                                               msgrecv->msg_name)
                                               ->sin_addr))
-                      << LOG_NV("msgsend->msg_name:",
+                      << LOG_NV("msgsend->msg_name",
                                 inet_ntoa(reinterpret_cast<sockaddr_in *>(
                                               msgsend->msg_name)
                                               ->sin_addr));
@@ -258,6 +258,7 @@ int UDPServerChannel::Serve(void *context, ServeFunc serve_func) {
     pbsend.MakeData(response);
     msghdr *msgsend = pbsend.GetResult();
     ret = sendmsg(this->socket_fd_, msgsend, 0);
+    DLOG(INFO) << "Sent";
     if (ret == -1) PLOG(ERROR);
     DELETE_PTR(response);
   }
