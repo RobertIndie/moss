@@ -33,7 +33,7 @@ const int kRXTMin = 20;
 // max retransmit timeout value, in millisecond
 const int kRXTMax = 10000;
 // max times to retransmit
-const int kRXTMaxTimes = 3;
+const int kRXTMaxTimes = 10;
 class RTTInfo {
  public:
   float rtt;
