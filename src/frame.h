@@ -3,6 +3,7 @@
  * */
 #ifndef SRC_FRAME_H_
 #define SRC_FRAME_H_
+#include <cstddef>
 #include <cstdint>
 
 // variable-length integer type
@@ -99,5 +100,31 @@ struct FrameResetStream {
   // stream by the RESET_STREAM sender, in unit of bytes.
   vint final_size;
 };
+
+// Convert data to frame.
+// Example:
+//    char *data;// where data received from the network
+//    void *frame;
+//    ConvertDataToFrame(data,sizeof(data),frame);
+int ConvertDataToFrame(const char* data, const size_t len, void* frame);
+
+// Convert frame to data.
+// new memory outside the function
+// Example:
+//    size_t buff_size;
+//    char* buff = new char[buff_size];
+//    void* frame;
+//    ConvertFrameToData(frame,buff,buff_size);
+int ConvertFrameToData(const void* frame, const char* buff,
+                       const size_t buff_size);
+
+// Convert frame to data.
+// new memory inside the function
+// Example:
+//    int* len;
+//    char* data;
+//    void* frame;
+//    ConvertFrameToData(frame,data,len);
+int ConvertFrameToData(const void* frame, char* data, size_t* len);
 
 #endif  // SRC_FRAME_H_
