@@ -9,6 +9,34 @@
 // variable-length integer type
 typedef uint64_t vint;
 
+enum FrameType { kStream = 0, kStreamDataBlocked, kResetStream };
+
+// Generic Frame Layout [GFL]
+//  0                   1                   2                   3
+//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                       Frame Type (i)                        ...
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                   Type-Dependent Fields (*)                 ...
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+struct GenericFrameLayout {
+  vint frame_type;
+  char* data;
+  ~GenericFrameLayout() {
+    if (data != nullptr) {
+      delete[] data;
+    }
+  }
+};
+
+// Convert GenericFrameLayout to Frame.
+int ConvertGFLToFrame(const GenericFrameLayout* const gfl, void* frame,
+                      FrameType* frame_type);
+
+// Convert frame to GenericFrameLayout.
+int ConvertFrameToGFL(const void* const frame, const FrameType frame_type,
+                      GenericFrameLayout* gfl);
+
 // STREAM Frame
 // type: 0x08 to 0x0f
 // STREAM frames implicitly create a stream and carry stream data. The STREAM
@@ -55,6 +83,9 @@ struct FrameStream {
   vint length;
   // Stream Data: The bytes from the designated stream to be delivered.
   char* stream_data;
+  ~FrameStream() {
+    if (stream_data != nullptr) delete[] stream_data;
+  }
 };
 
 // STREAM_DATA_BLOCKED Frame
@@ -100,31 +131,5 @@ struct FrameResetStream {
   // stream by the RESET_STREAM sender, in unit of bytes.
   vint final_size;
 };
-
-// Convert data to frame.
-// Example:
-//    char *data;// where data received from the network
-//    void *frame;
-//    ConvertDataToFrame(data,sizeof(data),frame);
-int ConvertDataToFrame(const char* data, const size_t len, void* frame);
-
-// Convert frame to data.
-// new memory outside the function
-// Example:
-//    size_t buff_size;
-//    char* buff = new char[buff_size];
-//    void* frame;
-//    ConvertFrameToData(frame,buff,buff_size);
-int ConvertFrameToData(const void* frame, const char* buff,
-                       const size_t buff_size);
-
-// Convert frame to data.
-// new memory inside the function
-// Example:
-//    int* len;
-//    char* data;
-//    void* frame;
-//    ConvertFrameToData(frame,data,len);
-int ConvertFrameToData(const void* frame, char* data, size_t* len);
 
 #endif  // SRC_FRAME_H_
