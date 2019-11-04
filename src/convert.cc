@@ -178,9 +178,55 @@ int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
 // 将数据从二进制中提取出来
 
 //从其中的第一个字符 并分析这个字段的长度 FrameStream单独一种方式
-uint Getlen(const char *const orgin) {
-  char tmpC = *(orgin + 0);  // 将字符串的值第一个值提取出来并且当
+// 若location中的值 （条件）将试图取得下个位置信息可能存在的位置 并返回；
+enum LenMask { LEN = 0xC0 };
+uint GetLen(const char *const orgin, uint location = 0) {
+  char LocationInfo = *(orgin + location);  // 将二进制的中的
+  // 一个字节提取出来
+  uint LenBits = LocationInfo & LenMask::LEN;  // 得到长度信息
+  uint LenByte = GetLen(LenBits);  // 将信息转换为长度字节信息
+  // location += LenByte + 1;
+  return LenByte;
 }
-int ExtractData(const char *const orgin, vint *data) {}
+// 提却数据，也就是二进制到 vint 的转化
+// 第一个参数指明原始二进制数据，第二个参数为数据的目标存放地址（为一个数组），第三个参数指明第二个参数应该有几个元素
+// 若在其中为分离字串的时候失败，那么返回0，若成功将返回1；
+int BinToVint(const char *const orgin, vint *data, uint num) {
+  uint location = 0;  //字符串的初始位置
+  for (uint i = 0; i < num; ++i) {
+    uint LenByte = GetLen(orgin, location);  // Get length Info;
+    uint tmpBegin = location;  // 临时储存上一个信息位置，
+    location += LenByte;  // 此时location 位置指向下一个长度信息的
+    // 将其中的字符串提取出来
+    char *tmpSubString = new char[LenByte];  // 储存子串
+    if (tmpSubString == nullptr) return 0;
+    for (uint i = 0; i < LenByte; ++i) {
+      tmpSubString[i] = orgin[tmpBegin + i];
+    }
+    *(data + i) |= *tmpSubString;  // 将数据存放到目的地
+    // 释放临时变量
+    delete[] tmpSubString;
+  }
+  return 1;
+}
+// 确保用户输入的是有效数据，不对数据的有效性进行检查
 // GFL to FSDB
-void GflToFsdb(const GenericFrameLayout *orgin, FrameStreamDataBlocked *dir) {}
+// 返回提取结果，若其中有一个为假那么返回错误
+int GflToFsdb(const GenericFrameLayout *orgin, FrameStreamDataBlocked *dir) {
+  vint *data = new vint[2];  //用于储存从中提取的数据
+  uint result = BinToVint(orgin->data, data, 2);
+  if (result == 0) return 0;
+  dir->stream_id = data[0];
+  dir->stream_data_limit = data[1];
+  return 1;
+}
+// GFL-> FRS
+int GflToFrs(const GenericFrameLayout *orgin, FrameResetStream *dir) {
+  vint *data = new vint[3];  //用于储存从中提取的数据
+  uint result = BinToVint(orgin->data, data, 3);
+  if (result == 0) return 0;
+  dir->stream_id = data[0];
+  dir->error_code = data[1];
+  dir->final_size = data[2];
+  return 1;
+}
