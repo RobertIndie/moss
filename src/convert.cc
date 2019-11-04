@@ -1,5 +1,6 @@
 /*
-Copyright 2019 YHTB
+Copyright 2019 Linkworld Open Team
+                              YHTB
 */
 #include "./frame.h"
 using uint = unsigned int;
@@ -155,6 +156,7 @@ void FsToGFL(FrameStream *data, GenericFrameLayout *result) {
     delete[] len_data;
   }
 }
+// 成功返回对象类型，失败返回-1；
 int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
                       GenericFrameLayout *gfl) {
   switch (Frame_type) {
@@ -177,13 +179,13 @@ int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
 // convert bin to struct
 // 将数据从二进制中提取出来
 
-//从其中的第一个字符 并分析这个字段的长度 FrameStream单独一种方式
+//从其中的第一个字符 并分析这个字段的长度
 // 若location中的值 （条件）将试图取得下个位置信息可能存在的位置 并返回；
-enum LenMask { LEN = 0xC0 };
+enum LenMask { LENG = 0xC0 };
 uint GetLen(const char *const orgin, uint location = 0) {
   char LocationInfo = *(orgin + location);  // 将二进制的中的
   // 一个字节提取出来
-  uint LenBits = LocationInfo & LenMask::LEN;  // 得到长度信息
+  uint LenBits = LocationInfo & LenMask::LENG;  // 得到长度信息
   uint LenByte = GetLen(LenBits);  // 将信息转换为长度字节信息
   // location += LenByte + 1;
   return LenByte;
@@ -191,8 +193,13 @@ uint GetLen(const char *const orgin, uint location = 0) {
 // 提却数据，也就是二进制到 vint 的转化
 // 第一个参数指明原始二进制数据，第二个参数为数据的目标存放地址（为一个数组），第三个参数指明第二个参数应该有几个元素
 // 若在其中为分离字串的时候失败，那么返回0，若成功将返回1；
-int BinToVint(const char *const orgin, vint *data, uint num) {
+// 最后四个参数只是为了方便转换到FrameStream 的类型
+int BinToVint(const char *const orgin, vint *data, uint num,
+              bool fsFlag = false, bool fsFlag_off = false,
+              bool fsFlag_len = false, char *stream_data = nullptr) {
   uint location = 0;  //字符串的初始位置
+  if (fsFlag)
+    num = 1;  // 若要转换的类型是FrameStream 那么将这个代码端只提取ID字段
   for (uint i = 0; i < num; ++i) {
     uint LenByte = GetLen(orgin, location);  // Get length Info;
     uint tmpBegin = location;  // 临时储存上一个信息位置，
@@ -206,6 +213,41 @@ int BinToVint(const char *const orgin, vint *data, uint num) {
     *(data + i) |= *tmpSubString;  // 将数据存放到目的地
     // 释放临时变量
     delete[] tmpSubString;
+  }
+  // 为了FrameStream stream_data
+  // 提取ID段的数据之后 此时location位置指向offest || length
+  // 若fsFlag_off 被置一 那么代表有offest 字段
+  if (fsFlag && fsFlag_off) {
+    uint LenByte = GetLen(orgin, location);
+    uint tmpBegin = location;
+    location += tmpBegin;
+    char *tmpSubString = new char[LenByte];  // 储存子串
+    if (tmpSubString == nullptr) return 0;
+    for (uint i = 0; i < LenByte; ++i) {
+      tmpSubString[i] = orgin[tmpBegin + i];
+    }
+    *(data + 1) |= *tmpSubString;  // 将数据存放到目的地
+    // 释放临时变量
+    delete[] tmpSubString;
+  }
+  if (fsFlag && fsFlag_len) {
+    uint LenByte = GetLen(orgin, location);
+    uint tmpBegin = location;
+    location += tmpBegin;
+    char *tmpSubString = new char[LenByte];  // 储存子串
+    if (tmpSubString == nullptr) return 0;
+    for (uint i = 0; i < LenByte; ++i) {
+      tmpSubString[i] = orgin[tmpBegin + i];
+    }
+    *(data + 1) |= *tmpSubString;  // 将数据存放到目的地
+    // 释放临时变量
+    delete[] tmpSubString;
+    uint64_t length = (*(data + 1) << 2);  //消除高位的标志位；
+    stream_data = new char[length];
+    if (stream_data == nullptr) return 0;
+    for (uint i = 0; i < length; ++i) {
+      stream_data[i] = orgin[location + i];
+    }
   }
   return 1;
 }
@@ -229,4 +271,52 @@ int GflToFrs(const GenericFrameLayout *orgin, FrameResetStream *dir) {
   dir->error_code = data[1];
   dir->final_size = data[2];
   return 1;
+}
+
+// GFL -> FS
+// 若转换失败则返回0
+int GflToFs(const GenericFrameLayout *orgin, FrameStream *dir) {
+  dir->bits = orgin->frame_type;
+  // 先分析这个类型，来判断总数居中有几个数据
+  uint LenBit = 0, OffBit = 0;
+  if ((orgin->frame_type & Mask::LEN) == Mask::LEN) ++LenBit;
+  if ((orgin->frame_type & Mask::OFF) == Mask::OFF) ++OffBit;
+  vint *data = new vint[1 + LenBit + OffBit];
+  if (BinToVint(orgin->data, data, 3, true, OffBit, LenBit, dir->stream_data)) {
+    return 0;
+  }
+  dir->id = *(data + 0);
+  if (OffBit) {
+    dir->offset = *(data + 1);
+    if (LenBit)
+      dir->length = *(data + 2);
+    else
+      dir->length = 0;
+  } else {
+    dir->offset = 0;
+    if (LenBit)
+      dir->length = *(data + 1);
+    else
+      dir->length = 0;
+  }
+  return 1;
+}
+inline bool CheckFS(vint bits) { return ((bits >= 0x08) && (bits <= 0x0f)); }
+// 成功的话返回1 转换失败返回-1 有每一个转换函数引起的错误一般为分配内存失败
+int ConvertGFLToFrame(const GenericFrameLayout *const gfl, void *frame,
+                      FrameType *frameType) {
+  switch (gfl->frame_type) {
+    case Type::FRS:
+      *frameType = FrameType::kResetStream;
+      return GflToFrs(gfl, reinterpret_cast<FrameResetStream *>(frame));
+    case Type::FSDB:
+      *frameType = FrameType::kStreamDataBlocked;
+      return GflToFsdb(gfl, reinterpret_cast<FrameStreamDataBlocked *>(frame));
+    default:
+      if (CheckFS(gfl->frame_type)) {
+        *frameType = FrameType::kStream;
+        return GflToFs(gfl, reinterpret_cast<FrameStream *>(frame));
+      }
+      return -1;
+  }
 }
