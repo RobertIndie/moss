@@ -17,8 +17,6 @@ enum Type { FRS = 0x04, FSDB = 0x15 };
 Copyright YHTB 2019
 AddFlag Template Function
 */
-#include "./frame.h"
-using uint = unsigned int;
 // 编译期常量
 template <typename T>
 constexpr uint64_t TypeMax = std::numeric_limits<T>::max();
@@ -88,29 +86,32 @@ inline void RemoveFlag(vint *data) { (*(data) <<= 2) >>= 2; }
 // 类型的存放到相应的数组中，第一个原数据，第二个参数是目标地址，第三个参数指向对象需要的字节数
 // 注意：会出现的标志位被占用的情况
 void AccessVintToArray(const vint data, char *array, uint len) {
-  enum { Mask = 0xff };
-  uint totalBit = len * 8;
-  char tmpPartData;  //言数据中的
+  // uint total_bit = len * 8;
+  vint copy_data = data;
+  RemoveFlag(&copy_data);
+  char tmpPartData;  //原数据中的部分
   for (uint i = 0; i < len; ++i) {
+    tmpPartData = 0;  // cleanUP
     // 将一个字节的数据从中提取出来
-    tmpPartData = (data >> (totalBit - (i + 1) * 8)) & Mask;
-    *(array + i) |= tmpPartData;
+    tmpPartData |= (copy_data >> i * 8);
+    // tmpPartData |= (copy_data >> (total_bit - (i + 1) * 8)) & Mask;
+    *(array + i + 1) |= tmpPartData;
   }
 }
 // 将一个数组从转换到一个大整形中
 // 第一个参数为储存数据的数组，第二个参数是指明第一个参数数组的长度，第三个参数数据的目标位置
-void AccessArrayToVint(const char *const SrcData, const uint ArrayLen,
-                       vint *DirData) {
+void AccessArrayToVint(const char *const src_data, const uint array_len,
+                       vint *dest_data) {
   enum { Mask = 0xff };
   vint tmpByteData = 0;  // 临时储存一字节的数据，并且将其放到适合的位置
-  for (uint i = ArrayLen - 1, shiftBit = 0; i > 0; --i, ++shiftBit) {
+  for (uint i = 0; i < array_len; ++i) {
     tmpByteData = 0;  // cleanUp
-    tmpByteData = *(SrcData + i) & Mask;
-    tmpByteData <<= shiftBit * 8;
-    *DirData |= tmpByteData;
+    tmpByteData = *(src_data + i) & Mask;
+    tmpByteData <<= i * 8;
+    *dest_data |= tmpByteData;
   }
 }
-//  获取一个字段的长度 单位是byte
+//  获取一个字段的长度 单位是byte  不包括标志位占用的一个字节
 inline uint GetLen(uint flag) {
   switch (flag) {
     case 0x0:
@@ -126,25 +127,29 @@ inline uint GetLen(uint flag) {
   }
 }
 // vint<=>bin
-// 申请完控制之后将字符数组的前两位添加flag
+// 添加标志 最低(一字节）储存标志位
 char *vintTobin(vint num) {
   char *tmp;
   uint len = 0;
   switch (GetFlag(num)) {
     case 0x00:
-      tmp = new char[1]{0};
+      tmp = new char[2]{0};
+      tmp[0] |= 0x00;
       len = 1;
       break;
     case 0x01:
-      tmp = new char[2]{0};
+      tmp = new char[3]{0};
+      tmp[0] |= 0x01;
       len = 2;
       break;
     case 0x02:
       tmp = new char[4]{0};
+      tmp[0] |= 0x02;
       len = 4;
       break;
     case 0x03:
-      tmp = new char[8]{0};
+      tmp = new char[9]{0};
+      tmp[0] |= 0x03;
       len = 8;
       break;
     default:
@@ -182,9 +187,9 @@ void FRSToGFL(FrameResetStream *Data, GenericFrameLayout *result) {
   SetFlag(&(Data->stream_id));
   SetFlag(&(Data->error_code));
   SetFlag(&(Data->final_size));
-  uint Id_len = GetLen(GetFlag(Data->stream_id));
-  uint Er_len = GetLen(GetFlag(Data->error_code));
-  uint Fi_len = GetLen(GetFlag(Data->final_size));
+  uint Id_len = GetLen(GetFlag(Data->stream_id)) + 1;
+  uint Er_len = GetLen(GetFlag(Data->error_code)) + 1;
+  uint Fi_len = GetLen(GetFlag(Data->final_size)) + 1;
   uint total_len = Id_len + Er_len + Fi_len;
   // 为总数据申请内存；
   char *total_data = new char[total_len]{0};
@@ -195,8 +200,8 @@ void FRSToGFL(FrameResetStream *Data, GenericFrameLayout *result) {
   char *err_data = vintTobin(Data->error_code);
   char *final_data = vintTobin(Data->final_size);
   MergeData(id_data, total_data, &location, Id_len);
-  MergeData(err_data, total_data, &location, Id_len);
-  MergeData(final_data, total_data, &location, Id_len);
+  MergeData(err_data, total_data, &location, Er_len);
+  MergeData(final_data, total_data, &location, Fi_len);
   RemoveFlag(&(Data->stream_id));
   RemoveFlag(&(Data->error_code));
   RemoveFlag(&(Data->final_size));
@@ -207,14 +212,14 @@ void FRSToGFL(FrameResetStream *Data, GenericFrameLayout *result) {
   delete[] err_data;
   delete[] final_data;
 }
-// FSDB => GFL 这个类型对象的方法同上 注释略
+// FSDB => GFL 这个类型对象的方法同上 注释略 加上标志位
 void FSDBToGFL(FrameStreamDataBlocked *data, GenericFrameLayout *result) {
   result->frame_type = Type::FSDB;
   // 获取长度
   SetFlag(&(data->stream_id));
   SetFlag(&(data->stream_data_limit));
-  uint Id_len = GetLen(GetFlag(data->stream_id));
-  uint Sdl_len = GetLen(GetFlag(data->stream_data_limit));
+  uint Id_len = GetLen(GetFlag(data->stream_id)) + 1;
+  uint Sdl_len = GetLen(GetFlag(data->stream_data_limit)) + 1;
   uint total_len = Id_len + Sdl_len;
 
   char *total_data = new char[total_len]{0};
@@ -297,15 +302,10 @@ int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
 
 //从其中的第一个字符 并分析这个字段的长度
 // 若location中的值 （条件）将试图取得下个位置信息可能存在的位置 并返回；
-enum LenMask { LENG = 0xC0 };
 uint GetLen(const char *const orgin, uint location = 0) {
-  char LocationInfo = *(orgin + location);  // 将二进制的中的
-  // 一个字节提取出来
-  uint LenBits = LocationInfo & LenMask::LENG;  // 得到长度信息
-  LenBits >>= 6;                   // 将标志位移动到末尾用于匹配
-  uint LenByte = GetLen(LenBits);  // 将信息转换为长度字节信息
+  // 一个二进制串中第一个字节为储存长度信息
+  return GetLen(*(orgin + location));  // 将信息转换为长度字节信息
   // location += LenByte + 1;
-  return LenByte;
 }
 // 提却数据，也就是二进制到 vint 的转化
 // 第一个参数指明原始二进制数据，第二个参数为数据的目标存放地址（为一个数组），第三个参数指明第二个参数应该有几个元素
@@ -319,8 +319,8 @@ int BinToVint(const char *const orgin, vint *data, uint num,
     num = 1;  // 若要转换的类型是FrameStream 那么将这个代码端只提取ID字段
   for (uint i = 0; i < num; ++i) {
     uint LenByte = GetLen(orgin, location);  // Get length Info;
-    uint tmpBegin = location;  // 临时储存上一个信息位置，
-    location += LenByte;  // 此时location 位置指向下一个长度信息的
+    uint tmpBegin = location + 1;  // 临时储存上一个信息位置，
+    location += LenByte + 1;  // 此时location 位置指向下一个长度信息的
     // 将其中的字符串提取出来
     char *tmpSubString = new char[LenByte];  // 储存子串
     if (tmpSubString == nullptr) return 0;
@@ -373,7 +373,7 @@ int BinToVint(const char *const orgin, vint *data, uint num,
 // GFL to FSDB
 // 返回提取结果，若其中有一个为假那么返回错误
 int GFLToFSDB(const GenericFrameLayout *orgin, FrameStreamDataBlocked *dir) {
-  vint *data = new vint[2];  //用于储存从中提取的数据
+  vint *data = new vint[2]{0};  //用于储存从中提取的数据
   uint result = BinToVint(orgin->data, data, 2);
   if (result == 0) return 0;
   dir->stream_id = data[0];
@@ -382,7 +382,7 @@ int GFLToFSDB(const GenericFrameLayout *orgin, FrameStreamDataBlocked *dir) {
 }
 // GFL-> FRS
 int GFLToFRS(const GenericFrameLayout *orgin, FrameResetStream *dir) {
-  vint *data = new vint[3];  //用于储存从中提取的数据
+  vint *data = new vint[3]{0};  //用于储存从中提取的数据
   uint result = BinToVint(orgin->data, data, 3);
   if (result == 0) return 0;
   dir->stream_id = data[0];
@@ -399,7 +399,7 @@ int GFLToFS(const GenericFrameLayout *orgin, FrameStream *dir) {
   uint LenBit = 0, OffBit = 0;
   if ((orgin->frame_type & Mask::LEN) == Mask::LEN) ++LenBit;
   if ((orgin->frame_type & Mask::OFF) == Mask::OFF) ++OffBit;
-  vint *data = new vint[1 + LenBit + OffBit];
+  vint *data = new vint[1 + LenBit + OffBit]{0};
   if (BinToVint(orgin->data, data, 3, true, OffBit, LenBit, dir->stream_data)) {
     return 0;
   }
