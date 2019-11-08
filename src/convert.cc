@@ -14,49 +14,24 @@ enum Type { FRS = 0x04, FSDB = 0x15 };
 //---------------------------------------------------------------------------------
 // 为数据添加标志的相关函数
 /*
+Copyright YHTB 2019
 AddFlag Template Function
 */
-// 编译期常量
-// C++14 Standard
-/* template <typename T>
-constexpr uint64_t TypeMax = std::numeric_limits<T>::max();
-template <typename T>
-constexpr uint64_t TypeMin = std::numeric_limits<T>::min();
-// 返回一个类型的大小
-template <typename T>
-constexpr uint TypeSize = sizeof(T); */
-template <typename T>
-constexpr uint64_t TypeMax(void) {
-  return std::numeric_limits<T>::max();
-}
-template <typename T>
-constexpr uint64_t TypeMin(void) {
-  return std::numeric_limits<T>::min();
-}
-template <typename T>
-constexpr uint64_t TypeSize(void) {
-  return sizeof(T);
-}
-// 返回一个整形是否在T的范围中
-template <typename T>
-inline bool Rang(uint64_t num) {
-  return ((num >= TypeMin<T>() && num <= TypeMax<T>()) ? true : false);
-}
 // 获取num所需的最小空间
 uint GetMinLen(vint *num) {
   // 由小到大的检查给定的数值是在哪一个类型之间的，当找到的时候返回这个字节的数值
-  if (Rang<uint8_t>(*num)) {
-    return TypeSize<uint8_t>();
-  } else if (Rang<uint16_t>(*num)) {
-    return TypeSize<uint16_t>();
-  } else if (Rang<uint32_t>(*num)) {
-    return TypeSize<uint32_t>();
-  } else if (Rang<uint64_t>(*num)) {
-    return TypeSize<uint64_t>();
+  if ((*num >= 0 && *num <= 63)) {
+    return 1;
+  } else if (*num > 63 && *num <= 16383) {
+    return 2;
+  } else if ((*num > 16383 && *num <= 1073741823)) {
+    return 4;
+  } else if (*num > 1073741823 && *num <= 4611686018427387903) {
+    return 8;
   }
   return 0;
 }
-// 获得标志位 这些标志位放在小端 使用时候需要根据需求来向左移相应的位数
+//获得标志位 这些标志位放在小端 使用时候需要根据需求来向左移相应的位数
 // 若没有匹配到相应的字节数那么返回0xff
 uint8_t GetFlag(uint DataLen) {
   switch (DataLen) {
@@ -100,14 +75,14 @@ inline void RemoveFlag(vint *data) { (*(data) <<= 2) >>= 2; }
 void AccessVintToArray(const vint data, char *array, uint len) {
   // uint total_bit = len * 8;
   vint copy_data = data;
-  RemoveFlag(&copy_data);
+  copy_data <<= 2;   // 将标志位空出来
   char tmpPartData;  //原数据中的部分
   for (uint i = 0; i < len; ++i) {
     tmpPartData = 0;  // cleanUP
     // 将一个字节的数据从中提取出来
     tmpPartData |= (copy_data >> i * 8);
     // tmpPartData |= (copy_data >> (total_bit - (i + 1) * 8)) & Mask;
-    *(array + i + 1) |= tmpPartData;
+    *(array + i) |= tmpPartData;
   }
 }
 // 将一个数组从转换到一个大整形中
@@ -122,6 +97,7 @@ void AccessArrayToVint(const char *const src_data, const uint array_len,
     tmpByteData <<= i * 8;
     *dest_data |= tmpByteData;
   }
+  *dest_data >>= 2;  // 去掉标志位
 }
 //  获取一个字段的长度 单位是byte  不包括标志位占用的一个字节
 inline uint GetLen(uint flag) {
@@ -145,12 +121,12 @@ char *vintTobin(vint num) {
   uint len = 0;
   switch (GetFlag(num)) {
     case 0x00:
-      tmp = new char[2]{0};
+      tmp = new char[1]{0};
       tmp[0] |= 0x00;
       len = 1;
       break;
     case 0x01:
-      tmp = new char[3]{0};
+      tmp = new char[2]{0};
       tmp[0] |= 0x01;
       len = 2;
       break;
@@ -160,7 +136,7 @@ char *vintTobin(vint num) {
       len = 4;
       break;
     case 0x03:
-      tmp = new char[9]{0};
+      tmp = new char[8]{0};
       tmp[0] |= 0x03;
       len = 8;
       break;
@@ -199,9 +175,9 @@ void FRSToGFL(FrameResetStream *Data, GenericFrameLayout *result) {
   SetFlag(&(Data->stream_id));
   SetFlag(&(Data->error_code));
   SetFlag(&(Data->final_size));
-  uint Id_len = GetLen(GetFlag(Data->stream_id)) + 1;
-  uint Er_len = GetLen(GetFlag(Data->error_code)) + 1;
-  uint Fi_len = GetLen(GetFlag(Data->final_size)) + 1;
+  uint Id_len = GetLen(GetFlag(Data->stream_id));
+  uint Er_len = GetLen(GetFlag(Data->error_code));
+  uint Fi_len = GetLen(GetFlag(Data->final_size));
   uint total_len = Id_len + Er_len + Fi_len;
   // 为总数据申请内存；
   char *total_data = new char[total_len]{0};
@@ -230,8 +206,8 @@ void FSDBToGFL(FrameStreamDataBlocked *data, GenericFrameLayout *result) {
   // 获取长度
   SetFlag(&(data->stream_id));
   SetFlag(&(data->stream_data_limit));
-  uint Id_len = GetLen(GetFlag(data->stream_id)) + 1;
-  uint Sdl_len = GetLen(GetFlag(data->stream_data_limit)) + 1;
+  uint Id_len = GetLen(GetFlag(data->stream_id));
+  uint Sdl_len = GetLen(GetFlag(data->stream_data_limit));
   uint total_len = Id_len + Sdl_len;
 
   char *total_data = new char[total_len]{0};
@@ -289,18 +265,22 @@ void FSToGFL(FrameStream *data, GenericFrameLayout *result) {
     RemoveFlag(&(data->length));
   }
 }
+// type_cast remove const and convert void * to Frame****
 // 成功返回对象类型，失败返回-1；
 int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
                       GenericFrameLayout *gfl) {
   switch (Frame_type) {
     case FrameType::kStream:
-      FSToGFL((FrameStream *)(frame), gfl);
+      FSToGFL(reinterpret_cast<FrameStream *>(const_cast<void *>(frame)), gfl);
       break;
     case FrameType::kStreamDataBlocked:
-      FSDBToGFL((FrameStreamDataBlocked *)frame, gfl);
+      FSDBToGFL(
+          reinterpret_cast<FrameStreamDataBlocked *>(const_cast<void *>(frame)),
+          gfl);
       break;
     case FrameType::kResetStream:
-      FRSToGFL((FrameResetStream *)frame, gfl);
+      FRSToGFL(reinterpret_cast<FrameResetStream *>(const_cast<void *>(frame)),
+               gfl);
       break;
     default:
       return -1;
@@ -315,8 +295,10 @@ int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
 //从其中的第一个字符 并分析这个字段的长度
 // 若location中的值 （条件）将试图取得下个位置信息可能存在的位置 并返回；
 uint GetLen(const char *const orgin, uint location = 0) {
-  // 一个二进制串中第一个字节为储存长度信息
-  return GetLen(*(orgin + location));  // 将信息转换为长度字节信息
+  // 第一个二进制串中的前两个bit位标志位
+  enum { LenMask = 0x03 };  // 用于获取长度信息
+
+  return GetLen(*(orgin + location) & LenMask);  // 将信息转换为长度字节信息
   // location += LenByte + 1;
 }
 // 提却数据，也就是二进制到 vint 的转化
@@ -331,8 +313,8 @@ int BinToVint(const char *const orgin, vint *data, uint num,
     num = 1;  // 若要转换的类型是FrameStream 那么将这个代码端只提取ID字段
   for (uint i = 0; i < num; ++i) {
     uint LenByte = GetLen(orgin, location);  // Get length Info;
-    uint tmpBegin = location + 1;  // 临时储存上一个信息位置，
-    location += LenByte + 1;  // 此时location 位置指向下一个长度信息的
+    uint tmpBegin = location;  // 临时储存上一个信息位置，
+    location += LenByte;  // 此时location 位置指向下一个长度信息的
     // 将其中的字符串提取出来
     char *tmpSubString = new char[LenByte];  // 储存子串
     if (tmpSubString == nullptr) return 0;
@@ -368,7 +350,7 @@ int BinToVint(const char *const orgin, vint *data, uint num,
     for (uint i = 0; i < LenByte; ++i) {
       tmpSubString[i] = orgin[tmpBegin + i];
     }
-    //*(data + 1) |= *tmpSubString;  // 将数据存放到目的地
+    //  *(data + 1) |= *tmpSubString;  // 将数据存放到目的地
     AccessArrayToVint(tmpSubString, LenByte, (data + 1));
     // 释放临时变量
     delete[] tmpSubString;
