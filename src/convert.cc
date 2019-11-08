@@ -14,33 +14,45 @@ enum Type { FRS = 0x04, FSDB = 0x15 };
 //---------------------------------------------------------------------------------
 // 为数据添加标志的相关函数
 /*
-Copyright YHTB 2019
 AddFlag Template Function
 */
 // 编译期常量
-template <typename T>
+// C++14 Standard
+/* template <typename T>
 constexpr uint64_t TypeMax = std::numeric_limits<T>::max();
 template <typename T>
 constexpr uint64_t TypeMin = std::numeric_limits<T>::min();
 // 返回一个类型的大小
 template <typename T>
-constexpr uint TypeSize = sizeof(T);
+constexpr uint TypeSize = sizeof(T); */
+template <typename T>
+constexpr uint64_t TypeMax(void) {
+  return std::numeric_limits<T>::max();
+}
+template <typename T>
+constexpr uint64_t TypeMin(void) {
+  return std::numeric_limits<T>::min();
+}
+template <typename T>
+constexpr uint64_t TypeSize(void) {
+  return sizeof(T);
+}
 // 返回一个整形是否在T的范围中
 template <typename T>
 inline bool Rang(uint64_t num) {
-  return ((num >= TypeMin<T> && num <= TypeMax<T>) ? true : false);
+  return ((num >= TypeMin<T>() && num <= TypeMax<T>()) ? true : false);
 }
 // 获取num所需的最小空间
 uint GetMinLen(vint *num) {
   // 由小到大的检查给定的数值是在哪一个类型之间的，当找到的时候返回这个字节的数值
   if (Rang<uint8_t>(*num)) {
-    return TypeSize<uint8_t>;
+    return TypeSize<uint8_t>();
   } else if (Rang<uint16_t>(*num)) {
-    return TypeSize<uint16_t>;
+    return TypeSize<uint16_t>();
   } else if (Rang<uint32_t>(*num)) {
-    return TypeSize<uint32_t>;
+    return TypeSize<uint32_t>();
   } else if (Rang<uint64_t>(*num)) {
-    return TypeSize<uint64_t>;
+    return TypeSize<uint64_t>();
   }
   return 0;
 }
