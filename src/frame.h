@@ -22,6 +22,7 @@ enum FrameType { kStream = 0, kStreamDataBlocked, kResetStream };
 struct GenericFrameLayout {
   vint frame_type;
   char* data;
+  size_t data_len;
   ~GenericFrameLayout() {
     if (data != nullptr) {
       delete[] data;
