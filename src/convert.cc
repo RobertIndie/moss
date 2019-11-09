@@ -31,26 +31,21 @@ uint GetMinLen(vint *num) {
   }
   return 0;
 }
-//获得标志位 这些标志位放在小端 使用时候需要根据需求来向左移相应的位数
-// 若没有匹配到相应的字节数那么返回0xff
-uint8_t GetFlag(vint DataLen) {
-  switch (DataLen) {
-    case 1:
-      return 0x00;
-    case 2:
-      return 0x01;
-    case 4:
-      return 0x02;
-    case 8:
-      return 0x03;
-    default:
-      return 0xff;
-  }
-}
-// 跟据字节添加标志
+// 根据数据的需要的最小空间给 变长整形的数据中的前两位添加 带有长度信息的标志
 void SetFlag(vint *data) {
-  uint MinAir = GetMinLen(data);
-  vint tmpFlag = GetFlag(MinAir);
+  vint tmpFlag = 0;
+  switch (GetMinLen(data)) {
+    case 1:
+      tmpFlag = 0x00;
+    case 2:
+      tmpFlag = 0x01;
+    case 4:
+      tmpFlag = 0x02;
+    case 8:
+      tmpFlag = 0x03;
+    default:
+      tmpFlag = 0xff;
+  }
   if (tmpFlag == 0xff) {
     std::cout << "DataFiled" << std::endl;
     return;  // 终止程序
@@ -61,12 +56,8 @@ void SetFlag(vint *data) {
 
 //-------------------------------------------------------------------------------
 
-// 获取64位无符号整形的第一二位
-inline uint8_t GetFlag(vint num, const uint bits = 62) {
-  uint8_t tmp = num >> bits;
-  // 删掉标志位
-  return reinterpret_cast<uint8_t>(tmp);
-}
+// 从变长整形中抽出数据的长度标志
+inline uint8_t GetFlag(vint num, const uint bits = 62) { return num >> bits; }
 // 删除vint中的标志，无论这个数据是否存在标志位 ，都会执行语句，不做任何的检查
 inline void RemoveFlag(vint *data) { (*(data) <<= 2) >>= 2; }
 // 将一个vint
