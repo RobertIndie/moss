@@ -33,7 +33,7 @@ uint GetMinLen(vint *num) {
 }
 //获得标志位 这些标志位放在小端 使用时候需要根据需求来向左移相应的位数
 // 若没有匹配到相应的字节数那么返回0xff
-uint8_t GetFlag(uint DataLen) {
+uint8_t GetFlag(vint DataLen) {
   switch (DataLen) {
     case 1:
       return 0x00;
