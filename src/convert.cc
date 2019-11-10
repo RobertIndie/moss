@@ -37,12 +37,16 @@ void SetFlag(vint *data) {
   switch (GetMinLen(data)) {
     case 1:
       tmpFlag = 0x00;
+      break;
     case 2:
       tmpFlag = 0x01;
+      break;
     case 4:
       tmpFlag = 0x02;
+      break;
     case 8:
       tmpFlag = 0x03;
+      break;
     default:
       tmpFlag = 0xff;
   }
