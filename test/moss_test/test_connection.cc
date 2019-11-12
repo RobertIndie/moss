@@ -13,7 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
-
+#ifndef __MOSS_TEST
+#define __MOSS_TEST
+#endif
 #include "./connection.h"
 #include "gtest/gtest.h"
 
