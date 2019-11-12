@@ -31,8 +31,11 @@ class Stream {
  public:
   Stream(streamID_t id, Initializer initer, Directional direct)
       : id_(id), initer_(initer), direct_(direct), sendSide_(0), recvSide_(0) {}
-
+#ifdef __MOSS_TEST
+ public:
+#else
  private:
+#endif
   streamID_t id_;
   Initializer initer_;
   Directional direct_;

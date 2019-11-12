@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
 #include "./connection.h"
+#include "util/util.h"
+
 namespace moss {
 
 streamID_t Connection::NewID(const Initializer& initer,
@@ -23,7 +25,12 @@ streamID_t Connection::NewID(const Initializer& initer,
 }
 
 std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
-  
+  auto id = NewID(type_, direct);
+  std::shared_ptr<Stream> stream(new Stream(id, type_, direct));
+  mapStreams_[id] = stream;
+  PLOG(INFO) << "[Connection]Create Stream: " << LOG_VALUE(id)
+             << LOG_VALUE(type_) << LOG_VALUE(direct);
+  return stream;
 }
 
 }  // namespace moss

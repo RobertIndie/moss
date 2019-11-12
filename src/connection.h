@@ -27,7 +27,6 @@ class Connection {
  public:
   explicit Connection(const ConnectionType& type) : type_(type) {}
   std::shared_ptr<Stream> CreateStream(Directional direct);
-
  private:
   streamID_t nextIDPrefix_ = 0;
   ConnectionType type_;

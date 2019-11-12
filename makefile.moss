@@ -1,6 +1,6 @@
 CXX = g++
 AR = ar crv
-CXXFLAGS = -std=c++11 -g -O2 -D __MOSS_TEST
+CXXFLAGS = -std=c++11 -g -O2 -D __MOSS_TEST -Wreturn-type
 ifeq ($(PROJ_BASE),)
 PROJ_BASE := .
 endif
