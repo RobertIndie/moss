@@ -1,7 +1,17 @@
-/*
-Copyright 2019 Linkworld Open Team
-                              YHTB
-*/
+// Copyright (C) 2019 Linkworld Open Team
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 #include <iostream>
 #include <limits>
 #include "./frame.h"
@@ -235,12 +245,12 @@ void FSToGFL(FrameStream *data, GenericFrameLayout *result) {
     off_len = GetLen(GetFlag(data->offset));
   }
   if (((data->bits) & Mask::LEN) != 0) {
+    DataLen = data->length;
     SetFlag(&(data->length));
     len_len = GetLen(GetFlag(data->length));
-    DataLen = data->length;
   }
   // 为总数居申请空间
-  char *total_data = new char[off_len + len_len + DataLen];
+  char *total_data = new char[id_len + off_len + len_len + DataLen]{0};
   MergeData(id_data, total_data, &location, id_len);
   RemoveFlag(&(data->id));
   delete[] id_data;
@@ -259,6 +269,7 @@ void FSToGFL(FrameStream *data, GenericFrameLayout *result) {
     delete[] len_data;
     RemoveFlag(&(data->length));
   }
+  result->data = total_data;
 }
 // type_cast remove const and convert void * to Frame****
 // 成功返回对象类型，失败返回-1；
@@ -288,7 +299,6 @@ int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
 // 将数据从二进制中提取出来
 
 //从其中的第一个字符 并分析这个字段的长度
-// 若location中的值 （条件）将试图取得下个位置信息可能存在的位置 并返回；
 uint GetLen(const char *const orgin, uint location = 0) {
   // 第一个二进制串中的前两个bit位标志位
   enum { LenMask = 0x03 };  // 用于获取长度信息
@@ -302,7 +312,7 @@ uint GetLen(const char *const orgin, uint location = 0) {
 // 最后四个参数只是为了方便转换到FrameStream 的类型
 int BinToVint(const char *const orgin, vint *data, uint num,
               bool fsFlag = false, bool fsFlag_off = false,
-              bool fsFlag_len = false, char *stream_data = nullptr) {
+              bool fsFlag_len = false, char **stream_data = nullptr) {
   uint location = 0;  //字符串的初始位置
   if (fsFlag)
     num = 1;  // 若要转换的类型是FrameStream 那么将这个代码端只提取ID字段
@@ -323,37 +333,40 @@ int BinToVint(const char *const orgin, vint *data, uint num,
   // 为了FrameStream stream_data
   // 提取ID段的数据之后 此时location位置指向offest || length
   // 若fsFlag_off 被置一 那么代表有offest 字段
+  uint tmpLocation = 1;
   if (fsFlag && fsFlag_off) {
     uint LenByte = GetLen(orgin, location);
     uint tmpBegin = location;
-    location += tmpBegin;
+    location += LenByte;
     char *tmpSubString = new char[LenByte];  // 储存子串
     if (tmpSubString == nullptr) return 0;
     for (uint i = 0; i < LenByte; ++i) {
       tmpSubString[i] = orgin[tmpBegin + i];
     }
-    AccessArrayToVint(tmpSubString, LenByte, (data + 1));  // 将数据存放到目的地
+    AccessArrayToVint(tmpSubString, LenByte,
+                      (data + tmpLocation));  // 将数据存放到目的地
+    ++tmpLocation;
     // 释放临时变量
     delete[] tmpSubString;
   }
   if (fsFlag && fsFlag_len) {
     uint LenByte = GetLen(orgin, location);
     uint tmpBegin = location;
-    location += tmpBegin;
+    location += LenByte;
     char *tmpSubString = new char[LenByte];  // 储存子串
     if (tmpSubString == nullptr) return 0;
     for (uint i = 0; i < LenByte; ++i) {
       tmpSubString[i] = orgin[tmpBegin + i];
     }
     //  *(data + 1) |= *tmpSubString;  // 将数据存放到目的地
-    AccessArrayToVint(tmpSubString, LenByte, (data + 1));
+    AccessArrayToVint(tmpSubString, LenByte, (data + tmpLocation));
     // 释放临时变量
     delete[] tmpSubString;
-    uint64_t length = (*(data + 1) << 2);  //消除高位的标志位；
-    stream_data = new char[length];
+    uint64_t length = *(data + tmpLocation);
+    *stream_data = new char[length];
     if (stream_data == nullptr) return 0;
     for (uint i = 0; i < length; ++i) {
-      stream_data[i] = orgin[location + i];
+      (*stream_data)[i] = orgin[location + i];
     }
   }
   return 1;
@@ -389,7 +402,8 @@ int GFLToFS(const GenericFrameLayout *orgin, FrameStream *dir) {
   if ((orgin->frame_type & Mask::LEN) == Mask::LEN) ++LenBit;
   if ((orgin->frame_type & Mask::OFF) == Mask::OFF) ++OffBit;
   vint *data = new vint[1 + LenBit + OffBit]{0};
-  if (BinToVint(orgin->data, data, 3, true, OffBit, LenBit, dir->stream_data)) {
+  if (!BinToVint(orgin->data, data, 1, true, OffBit, LenBit,
+                 &(dir->stream_data))) {
     return 0;
   }
   dir->id = *(data + 0);
