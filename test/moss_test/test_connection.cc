@@ -15,12 +15,20 @@
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
 #include "./connection.h"
-namespace moss {
+#include "gtest/gtest.h"
 
-streamID_t Connection::NewID(Initializer initer, Directional direct) {
-  return ((nextIDPrefix_++) << 2) + (direct << 1) + initer;
+TEST(Connection, NewID) {
+  std::shared_ptr<moss::Connection> conn(new moss::Connection);
+  EXPECT_EQ(__Test_NewID(conn, moss::Initializer::kClient,
+                         moss::Directional::kBidirectional),
+            0);
+  EXPECT_EQ(__Test_NewID(conn, moss::Initializer::kServer,
+                         moss::Directional::kBidirectional),
+            5);
+  EXPECT_EQ(__Test_NewID(conn, moss::Initializer::kClient,
+                         moss::Directional::kUnidirectional),
+            10);
+  EXPECT_EQ(__Test_NewID(conn, moss::Initializer::kServer,
+                         moss::Directional::kUnidirectional),
+            15);
 }
-
-std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {}
-
-}  // namespace moss
