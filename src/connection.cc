@@ -17,10 +17,13 @@
 #include "./connection.h"
 namespace moss {
 
-streamID_t Connection::NewID(Initializer initer, Directional direct) {
+streamID_t Connection::NewID(const Initializer& initer,
+                             const Directional& direct) {
   return ((nextIDPrefix_++) << 2) + (direct << 1) + initer;
 }
 
-std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {}
+std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
+  
+}
 
 }  // namespace moss

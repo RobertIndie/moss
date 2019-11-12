@@ -23,18 +23,20 @@
 
 namespace moss {
 
-typedef uint64_t streamID_t;
 class Connection {
  public:
+  explicit Connection(const ConnectionType& type) : type_(type) {}
   std::shared_ptr<Stream> CreateStream(Directional direct);
 
  private:
   streamID_t nextIDPrefix_ = 0;
-  streamID_t NewID(Initializer initer, Directional direct);
+  ConnectionType type_;
+  streamID_t NewID(const Initializer& initer, const Directional& direct);
   std::map<streamID_t, std::shared_ptr<Stream> > mapStreams_;
 #ifdef __MOSS_TEST
   friend streamID_t __Test_NewID(std::shared_ptr<Connection> _this,
-                                 Initializer initer, Directional direct) {
+                                 const Initializer& initer,
+                                 const Directional& direct) {
     return _this->NewID(initer, direct);
   }
 #endif

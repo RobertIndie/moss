@@ -23,13 +23,19 @@
 namespace moss {
 
 enum Directional { kBidirectional = 0, kUnidirectional = 1 };
-enum Initializer { kClient = 0, kServer = 1 };
+enum ConnectionType { kClient = 0, kServer = 1 };
+typedef ConnectionType Initializer;
+typedef uint64_t streamID_t;
 
 class Stream {
  public:
-  explicit Stream(Directional direct);
+  Stream(streamID_t id, Initializer initer, Directional direct)
+      : id_(id), initer_(initer), direct_(direct), sendSide_(0), recvSide_(0) {}
 
  private:
+  streamID_t id_;
+  Initializer initer_;
+  Directional direct_;
   FSM sendSide_;
   FSM recvSide_;
 };

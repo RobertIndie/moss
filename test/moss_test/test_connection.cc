@@ -20,7 +20,8 @@
 #include "gtest/gtest.h"
 
 TEST(Connection, NewID) {
-  std::shared_ptr<moss::Connection> conn(new moss::Connection);
+  std::shared_ptr<moss::Connection> conn(
+      new moss::Connection(moss::ConnectionType::kClient));
   EXPECT_EQ(__Test_NewID(conn, moss::Initializer::kClient,
                          moss::Directional::kBidirectional),
             0);
