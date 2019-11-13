@@ -23,7 +23,7 @@
 
 namespace moss {
 
-struct CommandWord {
+struct CommandBase {
  protected:
   uint32_t type = 0;
   std::shared_ptr<void> arg;

@@ -18,6 +18,9 @@
 #define STREAM_H_
 
 #include <memory>
+#include <queue>
+#include "./co_routine.h"
+#include "./command.h"
 #include "./fsm/fsm.h"
 
 namespace moss {
@@ -26,6 +29,9 @@ enum Directional { kBidirectional = 0, kUnidirectional = 1 };
 enum ConnectionType { kClient = 0, kServer = 1 };
 typedef ConnectionType Initializer;
 typedef uint64_t streamID_t;
+
+struct CommandSide : public CommandBase {};
+struct CommandSendSide : public CommandSide {};
 
 class StreamSide {
  public:
@@ -57,6 +63,7 @@ class SendSide : public StreamSide {
   SendSide();
 
  private:
+  std::queue<CommandSendSide> command_queue_;
   int OnReady();
   int OnSend();
   int OnDataSent();
@@ -77,11 +84,7 @@ class Stream {
   };
 
   Stream(streamID_t id, Initializer initer, Directional direct)
-      : id_(id),
-        initer_(initer),
-        direct_(direct),
-        sendSide_(),
-        recvSide_(){};
+      : id_(id), initer_(initer), direct_(direct), sendSide_(), recvSide_(){};
 
 #ifdef __MOSS_TEST
  public:

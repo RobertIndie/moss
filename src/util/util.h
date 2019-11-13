@@ -1,14 +1,16 @@
 /**
  * Copyright 2019 Aaron Robert
  * */
-#ifndef SRC_UTIL_UTIL_H_
-#define SRC_UTIL_UTIL_H_
+#ifndef UTIL_UTIL_H_
+#define UTIL_UTIL_H_
 #if __cplusplus >= 201103L
 #define CPP11
 #endif
 #include <stdint.h>
 #include <sys/time.h>
+#include <memory>
 #include <string>
+#include "./co_routine.h"
 #include "glog/logging.h"
 
 inline void InitLogger(char *argv[]) {
@@ -61,4 +63,6 @@ inline unsigned int BKDRHash(const char *str) {
   return (hash & 0x7FFFFFFF);
 }
 
-#endif  // SRC_UTIL_UTIL_H_
+std::shared_ptr<stCoRoutine_t> CreateCoroutine(pfn_co_routine_t pfn, void *arg);
+
+#endif  // UTIL_UTIL_H_

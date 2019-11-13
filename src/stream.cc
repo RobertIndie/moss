@@ -45,6 +45,8 @@ SendSide::SendSide() {
   fsm.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
 }
 
-int SendSide::OnReady() {}
+int SendSide::OnReady() {
+
+}
 
 }  // namespace moss
