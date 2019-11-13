@@ -28,6 +28,7 @@ $(TARGET): $(OBJ)
 endif
 
 %.o : %.cc
+	# cpplint $<
 	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $@ -c $< $(LIB)
 
 .PHONY: clean
