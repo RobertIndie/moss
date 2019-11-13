@@ -50,11 +50,19 @@ class SendSide : public StreamSide {
     kStream,             // Send STREAM
     kStreamDataBlocked,  // Send STREAM_DATA_BLOCKED
     kCreateBiStream,     // Peer Creates Bidirectional Steram
-    kStreamFin,           // Send STREAM + FIN
+    kStreamFin,          // Send STREAM + FIN
     kRecvAllACKs,        // Recv All ACKs
     kRecvAck,            // Recv ACK
   };
   SendSide();
+
+ private:
+  int OnReady();
+  int OnSend();
+  int OnDataSent();
+  int OnResetSent();
+  int OnDataRecvd();
+  int OnResetRecvd();
 };
 
 class Stream {
@@ -72,8 +80,8 @@ class Stream {
       : id_(id),
         initer_(initer),
         direct_(direct),
-        sendSide_(SendSideState::kReady),
-        recvSide_(RecvSideState::kRecv){};
+        sendSide_(),
+        recvSide_(){};
 
 #ifdef __MOSS_TEST
  public:
@@ -83,8 +91,8 @@ class Stream {
   streamID_t id_;
   Initializer initer_;
   Directional direct_;
-  FSM sendSide_;
-  FSM recvSide_;
+  SendSide sendSide_;
+  SendSide recvSide_;
 };
 
 }  // namespace moss

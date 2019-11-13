@@ -37,6 +37,12 @@ SendSide::SendSide() {
            FSM::transition_t(State::kDataSent, State::kDataRecvd));
   fsm.When(TriggerType::kRecvAck,
            FSM::transition_t(State::kResetSent, State::kResetRecvd));
+  fsm.On(State::kReady, std::bind(&SendSide::OnReady, *this));
+  fsm.On(State::kSend, std::bind(&SendSide::OnSend, *this));
+  fsm.On(State::kDataSent, std::bind(&SendSide::OnDataSent, *this));
+  fsm.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
+  fsm.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
+  fsm.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
 }
 
 }  // namespace moss
