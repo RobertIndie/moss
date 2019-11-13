@@ -14,11 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
-#ifndef SRC_STREAM_H_
-#define SRC_STREAM_H_
+#ifndef STREAM_H_
+#define STREAM_H_
 
-class stream{
+#include <memory>
+#include "./fsm/fsm.h"
 
+namespace moss {
+
+enum Directional { kBidirectional = 0, kUnidirectional = 1 };
+enum ConnectionType { kClient = 0, kServer = 1 };
+typedef ConnectionType Initializer;
+typedef uint64_t streamID_t;
+
+class Stream {
+ public:
+  Stream(streamID_t id, Initializer initer, Directional direct)
+      : id_(id), initer_(initer), direct_(direct), sendSide_(0), recvSide_(0) {}
+#ifdef __MOSS_TEST
+ public:
+#else
+ private:
+#endif
+  streamID_t id_;
+  Initializer initer_;
+  Directional direct_;
+  FSM sendSide_;
+  FSM recvSide_;
 };
 
-#endif  // SRC_STREAM_H_
+}  // namespace moss
+
+#endif  // STREAM_H_

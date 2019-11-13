@@ -14,7 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
-#ifndef SRC_CONNECTION_H_
-#define SRC_CONNECTION_H_
+#ifndef CONNECTION_H_
+#define CONNECTION_H_
 
-#endif  // SRC_CONNECTION_H_
+#include <map>
+#include <memory>
+#include "./stream.h"
+
+namespace moss {
+
+class Connection {
+ public:
+  explicit Connection(const ConnectionType& type) : type_(type) {}
+  std::shared_ptr<Stream> CreateStream(Directional direct);
+ private:
+  streamID_t nextIDPrefix_ = 0;
+  ConnectionType type_;
+  streamID_t NewID(const Initializer& initer, const Directional& direct);
+  std::map<streamID_t, std::shared_ptr<Stream> > mapStreams_;
+#ifdef __MOSS_TEST
+  friend streamID_t __Test_NewID(std::shared_ptr<Connection> _this,
+                                 const Initializer& initer,
+                                 const Directional& direct) {
+    return _this->NewID(initer, direct);
+  }
+#endif
+};
+
+}  // namespace moss
+
+#endif  // CONNECTION_H_
