@@ -27,10 +27,54 @@ enum ConnectionType { kClient = 0, kServer = 1 };
 typedef ConnectionType Initializer;
 typedef uint64_t streamID_t;
 
+class StreamSide {
+ public:
+  StreamSide() : fsm(0) {}
+
+ protected:
+  FSM fsm;
+};
+
+class SendSide : public StreamSide {
+ public:
+  enum State {
+    kReady,
+    kSend,
+    kDataSent,
+    kResetSent,
+    kDataRecvd,
+    kResetRecvd,
+  };
+  enum TriggerType {
+    kResetStream,        // Send RESET_STREAM
+    kStream,             // Send STREAM
+    kStreamDataBlocked,  // Send STREAM_DATA_BLOCKED
+    kCreateBiStream,     // Peer Creates Bidirectional Steram
+    kStreamFin,           // Send STREAM + FIN
+    kRecvAllACKs,        // Recv All ACKs
+    kRecvAck,            // Recv ACK
+  };
+  SendSide();
+};
+
 class Stream {
  public:
+  enum RecvSideState {
+    kRecv,
+    kSizeKnown,
+    kDataRecvd,
+    kResetRecvd,
+    kDataRead,
+    kResetRead
+  };
+
   Stream(streamID_t id, Initializer initer, Directional direct)
-      : id_(id), initer_(initer), direct_(direct), sendSide_(0), recvSide_(0) {}
+      : id_(id),
+        initer_(initer),
+        direct_(direct),
+        sendSide_(SendSideState::kReady),
+        recvSide_(RecvSideState::kRecv){};
+
 #ifdef __MOSS_TEST
  public:
 #else
