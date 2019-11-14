@@ -34,7 +34,7 @@ class FSM {
   void When(const trigger_t& trigger, const transition_t& transition);
   void On(const state_t& state, const std::function<int()>& on_func);
   void Trigger(const trigger_t& trigger);
-  void Run() const;
+  int Run() const;
 
  private:
   state_t state_;

@@ -63,6 +63,6 @@ inline unsigned int BKDRHash(const char *str) {
   return (hash & 0x7FFFFFFF);
 }
 
-std::shared_ptr<stCoRoutine_t> CreateCoroutine(pfn_co_routine_t pfn, void *arg);
+stCoRoutine_t *CreateCoroutine(pfn_co_routine_t pfn, void *arg);
 
 #endif  // UTIL_UTIL_H_

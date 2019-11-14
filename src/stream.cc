@@ -15,38 +15,51 @@
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
 #include "./stream.h"
+#include "./util/util.h"
 
 namespace moss {
 
-SendSide::SendSide() {
-  fsm.When(TriggerType::kStream,
-           FSM::transition_t(State::kReady, State::kSend));
-  fsm.When(TriggerType::kStreamDataBlocked,
-           FSM::transition_t(State::kReady, State::kSend));
-  fsm.When(TriggerType::kCreateBiStream,
-           FSM::transition_t(State::kReady, State::kSend));
-  fsm.When(TriggerType::kStreamFin,
-           FSM::transition_t(State::kSend, State::kDataSent));
-  fsm.When(TriggerType::kResetStream,
-           FSM::transition_t(State::kReady, State::kResetSent));
-  fsm.When(TriggerType::kResetStream,
-           FSM::transition_t(State::kSend, State::kResetSent));
-  fsm.When(TriggerType::kResetStream,
-           FSM::transition_t(State::kDataSent, State::kResetSent));
-  fsm.When(TriggerType::kRecvAllACKs,
-           FSM::transition_t(State::kDataSent, State::kDataRecvd));
-  fsm.When(TriggerType::kRecvAck,
-           FSM::transition_t(State::kResetSent, State::kResetRecvd));
-  fsm.On(State::kReady, std::bind(&SendSide::OnReady, *this));
-  fsm.On(State::kSend, std::bind(&SendSide::OnSend, *this));
-  fsm.On(State::kDataSent, std::bind(&SendSide::OnDataSent, *this));
-  fsm.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
-  fsm.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
-  fsm.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
+void* CoSendSide(void* arg) {
+  auto sendside = reinterpret_cast<SendSide*>(arg);
+  while (sendside->fsm_.Run() != -1) {
+  }
 }
 
-int SendSide::OnReady() {
+SendSide::SendSide() {
+  fsm_.When(TriggerType::kStream,
+            FSM::transition_t(State::kReady, State::kSend));
+  fsm_.When(TriggerType::kStreamDataBlocked,
+            FSM::transition_t(State::kReady, State::kSend));
+  fsm_.When(TriggerType::kCreateBiStream,
+            FSM::transition_t(State::kReady, State::kSend));
+  fsm_.When(TriggerType::kStreamFin,
+            FSM::transition_t(State::kSend, State::kDataSent));
+  fsm_.When(TriggerType::kResetStream,
+            FSM::transition_t(State::kReady, State::kResetSent));
+  fsm_.When(TriggerType::kResetStream,
+            FSM::transition_t(State::kSend, State::kResetSent));
+  fsm_.When(TriggerType::kResetStream,
+            FSM::transition_t(State::kDataSent, State::kResetSent));
+  fsm_.When(TriggerType::kRecvAllACKs,
+            FSM::transition_t(State::kDataSent, State::kDataRecvd));
+  fsm_.When(TriggerType::kRecvAck,
+            FSM::transition_t(State::kResetSent, State::kResetRecvd));
+  fsm_.On(State::kReady, std::bind(&SendSide::OnReady, *this));
+  fsm_.On(State::kSend, std::bind(&SendSide::OnSend, *this));
+  fsm_.On(State::kDataSent, std::bind(&SendSide::OnDataSent, *this));
+  fsm_.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
+  fsm_.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
+  fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
+  co_ = CreateCoroutine(CoSendSide, this);
+}
 
+SendSide::~SendSide() { co_release(co_); }
+
+void SendSide::StartCoroutine() { co_resume(co_); }
+
+int SendSide::OnReady() {
+  
+  return 0;
 }
 
 }  // namespace moss

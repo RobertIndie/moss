@@ -35,10 +35,10 @@ struct CommandSendSide : public CommandSide {};
 
 class StreamSide {
  public:
-  StreamSide() : fsm(0) {}
+  StreamSide() : fsm_(0) {}
 
  protected:
-  FSM fsm;
+  FSM fsm_;
 };
 
 class SendSide : public StreamSide {
@@ -61,15 +61,19 @@ class SendSide : public StreamSide {
     kRecvAck,            // Recv ACK
   };
   SendSide();
+  ~SendSide();
+  void StartCoroutine();
 
  private:
   std::queue<CommandSendSide> command_queue_;
+  stCoRoutine_t* co_;
   int OnReady();
   int OnSend();
   int OnDataSent();
   int OnResetSent();
   int OnDataRecvd();
   int OnResetRecvd();
+  friend void* CoSendSide(void* arg);
 };
 
 class Stream {
