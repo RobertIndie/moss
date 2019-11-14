@@ -50,16 +50,16 @@ SendSide::SendSide() {
   fsm_.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
   fsm_.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
   fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
-  co_ = CreateCoroutine(CoSendSide, this);
+  co_ = std::shared_ptr<Coroutine>(new Coroutine(CoSendSide, this));
 }
 
-SendSide::~SendSide() { co_release(co_); }
+void SendSide::StartCoroutine() { co_->Resume(); }
 
-void SendSide::StartCoroutine() { co_resume(co_); }
+int SendSide::OnReady() { return 0; }
 
-int SendSide::OnReady() {
-  
-  return 0;
+int SendSide::WriteData(std::shared_ptr<GenericFrameLayout> gfl) {
+  std::shared_ptr<CommandWriteData> cmd(new CommandWriteData(gfl));
+  PushCommand(cmd);
 }
 
 }  // namespace moss

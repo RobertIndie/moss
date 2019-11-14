@@ -63,6 +63,23 @@ inline unsigned int BKDRHash(const char *str) {
   return (hash & 0x7FFFFFFF);
 }
 
-stCoRoutine_t *CreateCoroutine(pfn_co_routine_t pfn, void *arg);
+class Coroutine {
+ public:
+  static stShareStack_t *share_stack;
+  Coroutine(pfn_co_routine_t pfn, void *arg) {
+    if (share_stack == nullptr)
+      share_stack = co_alloc_sharestack(1, 1024 * 128);
+    stCoRoutineAttr_t attr;
+    attr.stack_size = 0;
+    attr.share_stack = &*share_stack;
+    co_create(&co_, &attr, pfn, arg);
+  }
+  void Resume() { co_resume(co_); }
+  void Yield() { co_yield_ct(); }
+  ~Coroutine() { co_release(co_); }
+
+ private:
+  stCoRoutine_t *co_;
+};
 
 #endif  // UTIL_UTIL_H_

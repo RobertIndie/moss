@@ -18,15 +18,38 @@
 #define COMMAND_H_
 
 #include <cstdint>
+#include <functional>
 #include <memory>
+#include <queue>
 #include <vector>
 
 namespace moss {
-
+// Command ID Type
+typedef uint32_t cid_t;
 struct CommandBase {
+ public:
+  CommandBase(cid_t type) : type_(type) {}
+  cid_t GetType() { return type_; }
+
  protected:
-  uint32_t type = 0;
-  std::shared_ptr<void> arg;
+  cid_t type_ = 0;
+};
+
+class CommandExecutor {
+ public:
+  virtual void PushCommand(std::shared_ptr<CommandBase> command) {
+    command_queue_.push(command);
+  }
+
+ protected:
+  std::queue<std::shared_ptr<CommandBase> > command_queue_;
+  void RegisterCommand(const cid_t& command_id, std::function<int()> func);
+
+  virtual std::shared_ptr<CommandBase> PopCommand() {
+    auto cmd = command_queue_.front();
+    command_queue_.pop();
+    return cmd;
+  }
 };
 
 }  // namespace moss

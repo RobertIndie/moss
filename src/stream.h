@@ -21,6 +21,7 @@
 #include <queue>
 #include "./co_routine.h"
 #include "./command.h"
+#include "./frame.h"
 #include "./fsm/fsm.h"
 
 namespace moss {
@@ -41,7 +42,7 @@ class StreamSide {
   FSM fsm_;
 };
 
-class SendSide : public StreamSide {
+class SendSide : public StreamSide, public CommandExecutor {
  public:
   enum State {
     kReady,
@@ -61,12 +62,17 @@ class SendSide : public StreamSide {
     kRecvAck,            // Recv ACK
   };
   SendSide();
-  ~SendSide();
   void StartCoroutine();
+  int WriteData(std::shared_ptr<GenericFrameLayout> gfl);
 
  private:
-  std::queue<CommandSendSide> command_queue_;
-  stCoRoutine_t* co_;
+  enum CommandID { kWriteData };
+  struct CommandWriteData : public CommandBase {
+    explicit CommandWriteData(std::shared_ptr<GenericFrameLayout> gfl)
+        : CommandBase(kWriteData), gfl_(gfl) {}
+    std::shared_ptr<GenericFrameLayout> gfl_;
+  };
+  std::shared_ptr<Coroutine> co_;
   int OnReady();
   int OnSend();
   int OnDataSent();
@@ -88,7 +94,7 @@ class Stream {
   };
 
   Stream(streamID_t id, Initializer initer, Directional direct)
-      : id_(id), initer_(initer), direct_(direct), sendSide_(), recvSide_(){};
+      : id_(id), initer_(initer), direct_(direct), sendSide_(), recvSide_() {}
 
 #ifdef __MOSS_TEST
  public:

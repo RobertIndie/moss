@@ -15,15 +15,3 @@
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
 #include "./util/util.h"
-
-stShareStack_t* share_stack;
-
-stCoRoutine_t* CreateCoroutine(pfn_co_routine_t pfn, void* arg) {
-  if (share_stack == nullptr) share_stack = co_alloc_sharestack(1, 1024 * 128);
-  stCoRoutineAttr_t attr;
-  attr.stack_size = 0;
-  attr.share_stack = &*share_stack;
-  stCoRoutine_t* co_p;
-  co_create(&co_p, &attr, pfn, arg);
-  return co_p;
-}
