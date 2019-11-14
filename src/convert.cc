@@ -184,6 +184,7 @@ void FRSToGFL(FrameResetStream *Data, GenericFrameLayout *result) {
   uint Er_len = GetLen(GetFlag(Data->error_code));
   uint Fi_len = GetLen(GetFlag(Data->final_size));
   uint total_len = Id_len + Er_len + Fi_len;
+  result->data_len = total_len;
   // 为总数据申请内存；
   char *total_data = new char[total_len]{0};
   // 将每一段的数据都放total_data 每一次存放一个字节
@@ -214,6 +215,7 @@ void FSDBToGFL(FrameStreamDataBlocked *data, GenericFrameLayout *result) {
   uint Id_len = GetLen(GetFlag(data->stream_id));
   uint Sdl_len = GetLen(GetFlag(data->stream_data_limit));
   uint total_len = Id_len + Sdl_len;
+  result->data_len = total_len;
 
   char *total_data = new char[total_len]{0};
   uint location = 0;
@@ -251,6 +253,7 @@ void FSToGFL(FrameStream *data, GenericFrameLayout *result) {
   }
   // 为总数居申请空间
   char *total_data = new char[id_len + off_len + len_len + DataLen]{0};
+  result->data_len = id_len + off_len + len_len + DataLen;
   MergeData(id_data, total_data, &location, id_len);
   RemoveFlag(&(data->id));
   delete[] id_data;
@@ -258,7 +261,7 @@ void FSToGFL(FrameStream *data, GenericFrameLayout *result) {
     char *off_data = vintTobin(data->offset);
     MergeData(off_data, total_data, &location, off_len);
     delete[] off_data;
-    RemoveFlag(&(data->length));
+    RemoveFlag(&(data->offset));
   }
   if (len_len) {
     char *len_data = vintTobin(data->length);
