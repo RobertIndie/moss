@@ -400,6 +400,7 @@ int GFLToFRS(const GenericFrameLayout *orgin, FrameResetStream *dir) {
 // 若转换失败则返回0
 int GFLToFS(const GenericFrameLayout *orgin, FrameStream *dir) {
   dir->bits = orgin->frame_type;
+  dir->stream_data = nullptr;
   // 先分析这个类型，来判断总数居中有几个数据
   uint LenBit = 0, OffBit = 0;
   if ((orgin->frame_type & Mask::LEN) == Mask::LEN) ++LenBit;
