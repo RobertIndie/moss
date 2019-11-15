@@ -42,7 +42,7 @@ class StreamSide {
   FSM fsm_;
 };
 
-class SendSide : public StreamSide, public CommandExecutor {
+class SendSide : public StreamSide {
  public:
   enum State {
     kReady,

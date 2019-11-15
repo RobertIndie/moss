@@ -35,23 +35,31 @@ struct CommandBase {
   cid_t type_ = 0;
 };
 
-class CommandExecutor {
+class CommandQueue {
  public:
-  virtual void PushCommand(std::shared_ptr<CommandBase> command) {
+  virtual void PushCmd(std::shared_ptr<CommandBase> cmd) = 0;
+  virtual std::shared_ptr<CommandBase> WaitCmd() = 0;
+};
+
+class CoCmdQueue : CommandQueue {
+ public:
+  explicit CoCmdQueue(std::shared_ptr<Coroutine> co) : co_(co) {}
+  void PushCmd(std::shared_ptr<CommandBase> command) {
     command_queue_.push(command);
+    co_->Resume();
   }
-  virtual void ExecuteCommand() = 0;
-
- protected:
-  std::queue<std::shared_ptr<CommandBase> > command_queue_;
-  void RegisterCommand(const cid_t& command_id, std::function<int()> func);
-
-  virtual std::shared_ptr<CommandBase> PopCommand() {
+  std::shared_ptr<CommandBase> WaitCmd() {
+    while (command_queue_.size() == 0) {
+      co_->Yield();
+    }
     auto cmd = command_queue_.front();
-    if (command_queue_.size() == 0) return nullptr;
     command_queue_.pop();
     return cmd;
   }
+
+ protected:
+  std::queue<std::shared_ptr<CommandBase> > command_queue_;
+  std::shared_ptr<Coroutine> co_;
 };
 
 }  // namespace moss

@@ -53,14 +53,4 @@ SendSide::SendSide() {
   co_ = std::shared_ptr<Coroutine>(new Coroutine(CoSendSide, this));
 }
 
-void SendSide::StartCoroutine() { co_->Resume(); }
-
-int SendSide::OnReady() { return 0; }
-
-void SendSide::ExecuteCommand() {
-  while (auto cmd = PopCommand()) {
-    
-  }
-}
-
 }  // namespace moss
