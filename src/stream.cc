@@ -57,9 +57,10 @@ void SendSide::StartCoroutine() { co_->Resume(); }
 
 int SendSide::OnReady() { return 0; }
 
-int SendSide::WriteData(std::shared_ptr<GenericFrameLayout> gfl) {
-  std::shared_ptr<CommandWriteData> cmd(new CommandWriteData(gfl));
-  PushCommand(cmd);
+void SendSide::ExecuteCommand() {
+  while (auto cmd = PopCommand()) {
+    
+  }
 }
 
 }  // namespace moss

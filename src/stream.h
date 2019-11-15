@@ -63,7 +63,7 @@ class SendSide : public StreamSide, public CommandExecutor {
   };
   SendSide();
   void StartCoroutine();
-  int WriteData(std::shared_ptr<GenericFrameLayout> gfl);
+  void ExecuteCommand();
 
  private:
   enum CommandID { kWriteData };
@@ -73,6 +73,7 @@ class SendSide : public StreamSide, public CommandExecutor {
     std::shared_ptr<GenericFrameLayout> gfl_;
   };
   std::shared_ptr<Coroutine> co_;
+  std::queue<std::shared_ptr<GenericFrameLayout> > send_buffer_;
   int OnReady();
   int OnSend();
   int OnDataSent();

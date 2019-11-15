@@ -28,7 +28,7 @@ namespace moss {
 typedef uint32_t cid_t;
 struct CommandBase {
  public:
-  CommandBase(cid_t type) : type_(type) {}
+  explicit CommandBase(cid_t type) : type_(type) {}
   cid_t GetType() { return type_; }
 
  protected:
@@ -40,6 +40,7 @@ class CommandExecutor {
   virtual void PushCommand(std::shared_ptr<CommandBase> command) {
     command_queue_.push(command);
   }
+  virtual void ExecuteCommand() = 0;
 
  protected:
   std::queue<std::shared_ptr<CommandBase> > command_queue_;
@@ -47,6 +48,7 @@ class CommandExecutor {
 
   virtual std::shared_ptr<CommandBase> PopCommand() {
     auto cmd = command_queue_.front();
+    if (command_queue_.size() == 0) return nullptr;
     command_queue_.pop();
     return cmd;
   }
