@@ -62,8 +62,6 @@ class SendSide : public StreamSide {
     kRecvAck,            // Recv ACK
   };
   SendSide();
-  void StartCoroutine();
-  void ExecuteCommand();
 
  private:
   enum CommandID { kWriteData };
@@ -72,7 +70,7 @@ class SendSide : public StreamSide {
         : CommandBase(kWriteData), gfl_(gfl) {}
     std::shared_ptr<GenericFrameLayout> gfl_;
   };
-  std::shared_ptr<Coroutine> co_;
+  std::shared_ptr<AsynRoutine> routine_;
   std::queue<std::shared_ptr<GenericFrameLayout> > send_buffer_;
   int OnReady();
   int OnSend();

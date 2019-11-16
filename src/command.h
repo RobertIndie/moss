@@ -22,6 +22,7 @@
 #include <memory>
 #include <queue>
 #include <vector>
+#include "./util/util.h"
 
 namespace moss {
 // Command ID Type
@@ -50,7 +51,7 @@ class CoCmdQueue : CommandQueue {
   }
   std::shared_ptr<CommandBase> WaitCmd() {
     while (command_queue_.size() == 0) {
-      co_->Yield();
+      co_->Suspend();
     }
     auto cmd = command_queue_.front();
     command_queue_.pop();

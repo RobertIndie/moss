@@ -50,7 +50,6 @@ SendSide::SendSide() {
   fsm_.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
   fsm_.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
   fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
-  co_ = std::shared_ptr<Coroutine>(new Coroutine(CoSendSide, this));
 }
 
 }  // namespace moss

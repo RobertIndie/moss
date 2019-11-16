@@ -63,7 +63,13 @@ inline unsigned int BKDRHash(const char *str) {
   return (hash & 0x7FFFFFFF);
 }
 
-class Coroutine {
+class AsynRoutine {
+ public:
+  virtual void Resume() = 0;
+  virtual void Suspend() = 0;
+};
+
+class Coroutine : AsynRoutine {
  public:
   static stShareStack_t *share_stack;
   Coroutine(pfn_co_routine_t pfn, void *arg) {
@@ -75,7 +81,7 @@ class Coroutine {
     co_create(&co_, &attr, pfn, arg);
   }
   void Resume() { co_resume(co_); }
-  void Yield() { co_yield_ct(); }
+  void Suspend() { co_yield_ct(); }
   ~Coroutine() { co_release(co_); }
 
  private:
