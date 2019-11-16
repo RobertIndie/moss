@@ -22,6 +22,7 @@
 #include <memory>
 #include <queue>
 #include <vector>
+#include "./routine.h"
 #include "./util/util.h"
 
 namespace moss {
@@ -44,7 +45,7 @@ class CommandQueue {
 
 class CoCmdQueue : CommandQueue {
  public:
-  explicit CoCmdQueue(std::shared_ptr<Coroutine> co) : co_(co) {}
+  explicit CoCmdQueue(std::shared_ptr<AsynRoutine> co) : co_(co) {}
   void PushCmd(std::shared_ptr<CommandBase> command) {
     command_queue_.push(command);
     co_->Resume();
@@ -59,8 +60,8 @@ class CoCmdQueue : CommandQueue {
   }
 
  protected:
+  std::shared_ptr<AsynRoutine> co_;
   std::queue<std::shared_ptr<CommandBase> > command_queue_;
-  std::shared_ptr<Coroutine> co_;
 };
 
 }  // namespace moss

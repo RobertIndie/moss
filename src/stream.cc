@@ -21,7 +21,9 @@ namespace moss {
 
 void* CoSendSide(void* arg) {
   auto sendside = reinterpret_cast<SendSide*>(arg);
-  while (sendside->fsm_.Run() != -1) {
+  while (true) {
+    sendside->ConsumeCmd();
+    if (sendside->fsm_.Run() != -1) break;
   }
 }
 
@@ -50,6 +52,13 @@ SendSide::SendSide() {
   fsm_.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
   fsm_.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
   fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
+  routine_ = std::shared_ptr<AsynRoutine>(
+      reinterpret_cast<AsynRoutine*>(new Coroutine(CoSendSide, this)));
+  cmdQueue_ = std::shared_ptr<CommandQueue>(
+      reinterpret_cast<CommandQueue*>(new CoCmdQueue(routine_)));
+  routine_->Resume();  // Create Stream (Sending)
 }
+
+void SendSide::ConsumeCmd() {}
 
 }  // namespace moss

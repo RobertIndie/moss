@@ -71,6 +71,7 @@ class SendSide : public StreamSide {
     std::shared_ptr<GenericFrameLayout> gfl_;
   };
   std::shared_ptr<AsynRoutine> routine_;
+  std::shared_ptr<CommandQueue> cmdQueue_;
   std::queue<std::shared_ptr<GenericFrameLayout> > send_buffer_;
   int OnReady();
   int OnSend();
@@ -79,6 +80,7 @@ class SendSide : public StreamSide {
   int OnDataRecvd();
   int OnResetRecvd();
   friend void* CoSendSide(void* arg);
+  void ConsumeCmd();
 };
 
 class Stream {
