@@ -31,11 +31,9 @@ enum ConnectionType { kClient = 0, kServer = 1 };
 typedef ConnectionType Initializer;
 typedef uint64_t streamID_t;
 
-struct CommandSide : public CommandBase {};
-struct CommandSendSide : public CommandSide {};
-
 class StreamSide {
  public:
+  struct CommandSide : public CommandBase {};
   StreamSide() : fsm_(0) {}
 
  protected:
@@ -44,6 +42,7 @@ class StreamSide {
 
 class SendSide : public StreamSide {
  public:
+  struct CommandSendSide : public CommandSide {};
   enum State {
     kReady,
     kSend,
@@ -71,8 +70,8 @@ class SendSide : public StreamSide {
     std::shared_ptr<GenericFrameLayout> gfl_;
   };
   std::shared_ptr<AsynRoutine> routine_;
-  std::shared_ptr<CommandQueue> cmdQueue_;
-  std::queue<std::shared_ptr<GenericFrameLayout> > send_buffer_;
+  std::shared_ptr<CommandQueue<CommandSendSide>> cmdQueue_;
+  std::queue<std::shared_ptr<GenericFrameLayout>> send_buffer_;
   int OnReady();
   int OnSend();
   int OnDataSent();

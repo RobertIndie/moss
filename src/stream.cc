@@ -54,8 +54,9 @@ SendSide::SendSide() {
   fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
   routine_ = std::shared_ptr<AsynRoutine>(
       reinterpret_cast<AsynRoutine*>(new Coroutine(CoSendSide, this)));
-  cmdQueue_ = std::shared_ptr<CommandQueue>(
-      reinterpret_cast<CommandQueue*>(new CoCmdQueue(routine_)));
+  cmdQueue_ = std::shared_ptr<CommandQueue<CommandSendSide>>(
+      reinterpret_cast<CommandQueue<CommandSendSide>*>(
+          new CoCmdQueue<CommandSendSide>(routine_)));
   routine_->Resume();  // Create Stream (Sending)
 }
 

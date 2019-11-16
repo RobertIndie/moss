@@ -37,20 +37,22 @@ struct CommandBase {
   cid_t type_ = 0;
 };
 
+template <typename CmdType>
 class CommandQueue {
  public:
-  virtual void PushCmd(std::shared_ptr<CommandBase> cmd) = 0;
-  virtual std::shared_ptr<CommandBase> WaitCmd() = 0;
+  virtual void PushCmd(std::shared_ptr<CmdType> cmd) = 0;
+  virtual std::shared_ptr<CmdType> WaitCmd() = 0;
 };
 
-class CoCmdQueue : CommandQueue {
+template <typename CmdType>
+class CoCmdQueue : CommandQueue<CmdType> {
  public:
   explicit CoCmdQueue(std::shared_ptr<AsynRoutine> co) : co_(co) {}
-  void PushCmd(std::shared_ptr<CommandBase> command) {
+  void PushCmd(std::shared_ptr<CmdType> command) {
     command_queue_.push(command);
     co_->Resume();
   }
-  std::shared_ptr<CommandBase> WaitCmd() {
+  std::shared_ptr<CmdType> WaitCmd() {
     while (command_queue_.size() == 0) {
       co_->Suspend();
     }
@@ -61,7 +63,7 @@ class CoCmdQueue : CommandQueue {
 
  protected:
   std::shared_ptr<AsynRoutine> co_;
-  std::queue<std::shared_ptr<CommandBase> > command_queue_;
+  std::queue<std::shared_ptr<CmdType> > command_queue_;
 };
 
 }  // namespace moss
