@@ -193,8 +193,7 @@ inline void WriteBinToVint(const char *const src_data, vint **dest_data,
     int begin = location;
     location += len;  //  此时location指向下一个标志所在的空间
     while (len-- > 0) {
-      *(*(dest_data + i)) |= *(src_data + begin);
-      *(*(dest_data + i)) <<= len * 8;
+      *(*(dest_data + i)) |= (*(src_data + begin) << (len * 8)) & 0xff;
       ++begin;
     }
     RemoveFlags(*(dest_data + i), tmpFlag);
@@ -221,8 +220,7 @@ int GFLToFS(const GenericFrameLayout *const gfl, FrameStream *frame) {
     int begin = location;
     location += len;  //  此时location指向下一个标志所在的空间
     while (len-- > 0) {
-      *(dest_data) |= *(gfl->data + begin);
-      *(dest_data) <<= len * 8;
+      *(dest_data) |= (*(gfl->data + begin) << len * 8) & 0xff;
       ++begin;
     }
     RemoveFlags(dest_data, tmpFlag);
