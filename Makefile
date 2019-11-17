@@ -12,6 +12,7 @@ all:
 	@for mod in $(BUILD_PATH); do\
 		cd $$mod && make && cd -;\
 	done
+	make test
 
 debug:
 	@for mod in $(BUILD_PATH); do\
