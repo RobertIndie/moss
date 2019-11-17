@@ -1,13 +1,10 @@
-/**
- * Copyright 2019 Linkworld Open Team
- * */
 #include <cstring>
 #include "./frame.h"
 #include "gtest/gtest.h"
 
 TEST(Frame, StreamFrameConvert) {
   FrameStream frame;
-  frame.bits = 0x04 | 0x02;
+  frame.bits = 0x07;
   frame.id = 0;
   frame.offset = 64;
   frame.length = 5;
@@ -16,11 +13,11 @@ TEST(Frame, StreamFrameConvert) {
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
   EXPECT_EQ(gfl.frame_type, FrameType::kStream);
   char gfl_data[] = {
-      0x04 | 0x02,                         // bits
-      0x00,                                // Stream ID
-      0x40,        0x40,                   // Offset
-      0x05,                                // Length
-      0x01,        0x02, 0x03, 0x04, 0x05  // Stream Data
+      0x07,                         // bits
+      0x00,                         // Stream ID
+      0x40, 0x40,                   // Offset
+      0x05,                         // Length
+      0x01, 0x02, 0x03, 0x04, 0x05  // Stream Data
   };
   EXPECT_EQ(gfl.data_len, 10);
   EXPECT_EQ(memcmp(gfl.data, gfl_data, 10), 0);
@@ -30,7 +27,7 @@ TEST(Frame, StreamFrameConvert) {
   ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
   EXPECT_EQ(TypeFrame, FrameType::kStream);
 
-  EXPECT_EQ(recv_frame.bits, 0x06);
+  EXPECT_EQ(recv_frame.bits, 0x07);
   EXPECT_EQ(recv_frame.id, 0);
   EXPECT_EQ(recv_frame.length, 5);
   EXPECT_EQ(recv_frame.offset, 64);
@@ -60,7 +57,7 @@ TEST(Frame, StreamFrameConvertWithoutData) {
   EXPECT_EQ(TypeFrame, FrameType::kStream);
   EXPECT_EQ(recv_frame.bits, frame.bits);
   EXPECT_EQ(recv_frame.id, frame.id);
-  EXPECT_EQ(recv_frame.offset, recv_frame.off);
+  EXPECT_EQ(recv_frame.offset, frame.offset);
 }
 
 TEST(Frame, StreamDataBlockedFrameConvert) {
@@ -108,9 +105,4 @@ TEST(Frame, ResetStreamFrameConvert) {
   EXPECT_EQ(recv_frame.stream_id, 12345);
   EXPECT_EQ(recv_frame.error_code, 12345);
   EXPECT_EQ(recv_frame.final_size, 12345);
-}
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }
