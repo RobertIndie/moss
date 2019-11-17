@@ -193,7 +193,7 @@ inline void WriteBinToVint(const char *const src_data, vint **dest_data,
     int begin = location;
     location += len;  //  此时location指向下一个标志所在的空间
     while (len-- > 0) {
-      *(*(dest_data + i)) |= (*(src_data + begin) << (len * 8)) & 0xff;
+      *(*(dest_data + i)) |= ((*(src_data + begin) & 0xff) << (len * 8));
       ++begin;
     }
     RemoveFlags(*(dest_data + i), tmpFlag);
@@ -214,13 +214,15 @@ int GFLToFSDB(const GenericFrameLayout *const gfl,
 }
 int GFLToFS(const GenericFrameLayout *const gfl, FrameStream *frame) {
   int location = 1;  // 数据开始的位置
+  frame->stream_data = nullptr;
+  // 若没有数据存放的时候不设置为Nullptr那在程序结束的时候会释放一个无效指针
   auto readF = [&](vint *dest_data) mutable {
     uint8_t tmpFlag = (*(gfl->data + location) & 0xC0) >> 6;
     int len = FlagToLen(tmpFlag);
     int begin = location;
     location += len;  //  此时location指向下一个标志所在的空间
     while (len-- > 0) {
-      *(dest_data) |= (*(gfl->data + begin) << len * 8) & 0xff;
+      *(dest_data) |= ((*(gfl->data + begin) & 0xff) << len * 8);
       ++begin;
     }
     RemoveFlags(dest_data, tmpFlag);
