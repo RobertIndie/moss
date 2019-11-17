@@ -7,22 +7,33 @@
 
 TEST(Frame, StreamFrameConvert) {
   FrameStream frame;
-  frame.bits = 0x7;
+  frame.bits = 0x04 | 0x02;
   frame.id = 0;
   frame.offset = 64;
   frame.length = 5;
   frame.stream_data = new char[5]{0x01, 0x02, 0x03, 0x04, 0x05};
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type, 0xf);
+  EXPECT_EQ(gfl.frame_type, FrameType::kStream);
   char gfl_data[] = {
-      0x00,                         // Stream ID
-      0x40, 0x40,                   // Offset
-      0x05,                         // Length
-      0x01, 0x02, 0x03, 0x04, 0x05  // Stream Data
+      0x04 | 0x02,                         // bits
+      0x00,                                // Stream ID
+      0x40,        0x40,                   // Offset
+      0x05,                                // Length
+      0x01,        0x02, 0x03, 0x04, 0x05  // Stream Data
   };
-  EXPECT_EQ(gfl.data_len, 9);
-  EXPECT_EQ(memcmp(gfl.data, gfl_data, 9), 0);
+  EXPECT_EQ(gfl.data_len, 10);
+  EXPECT_EQ(memcmp(gfl.data, gfl_data, 10), 0);
+  //  test convert bin to frame;
+  FrameStream recv_frame;
+  FrameType TypeFrame;
+  ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
+  EXPECT_EQ(TypeFrame, FrameType::kStream);
+
+  EXPECT_EQ(recv_frame.bits, 0x06);
+  EXPECT_EQ(recv_frame.id, 0);
+  EXPECT_EQ(recv_frame.length, 5);
+  EXPECT_EQ(recv_frame.offset, 64);
 }
 
 TEST(Frame, StreamFrameConvertWithoutData) {
@@ -34,13 +45,22 @@ TEST(Frame, StreamFrameConvertWithoutData) {
                                   0x05};  // test: do not contain data in gfl
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type, 0xc);
+  EXPECT_EQ(gfl.frame_type, FrameType::kStream);
   char gfl_data[] = {
-      0xff, 0xff, 0xff, 0xff,                         // Stream ID
-      0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff  // Offset
+      0x04,                                           // bits
+      0xbf, 0xff, 0xff, 0xff,                         // Stream ID
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff  // Offset
   };
-  EXPECT_EQ(gfl.data_len, 12);
-  EXPECT_EQ(memcmp(gfl.data, gfl_data, 12), 0);
+  EXPECT_EQ(gfl.data_len, 13);
+  EXPECT_EQ(memcmp(gfl.data, gfl_data, 13), 0);
+  //  test convert bin to frame;
+  FrameStream recv_frame;
+  FrameType TypeFrame;
+  ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
+  EXPECT_EQ(TypeFrame, FrameType::kStream);
+  EXPECT_EQ(recv_frame.bits, frame.bits);
+  EXPECT_EQ(recv_frame.id, frame.id);
+  EXPECT_EQ(recv_frame.offset, recv_frame.off);
 }
 
 TEST(Frame, StreamDataBlockedFrameConvert) {
@@ -49,13 +69,20 @@ TEST(Frame, StreamDataBlockedFrameConvert) {
   frame.stream_data_limit = 0;
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStreamDataBlocked, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type, 0x15);
+  EXPECT_EQ(gfl.frame_type, FrameType::kStreamDataBlocked);
   char gfl_data[] = {
       0x70, 0x39,  // Stream ID
       0x00         // Stream Data Limit
   };
   EXPECT_EQ(gfl.data_len, 3);
   EXPECT_EQ(memcmp(gfl.data, gfl_data, 3), 0);
+  //  test convert bin to frame;
+  FrameStreamDataBlocked recv_frame;
+  FrameType TypeFrame;
+  ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
+  EXPECT_EQ(TypeFrame, FrameType::kStreamDataBlocked);
+  EXPECT_EQ(recv_frame.stream_id, 12345);
+  EXPECT_EQ(recv_frame.stream_data_limit, 0);
 }
 
 TEST(Frame, ResetStreamFrameConvert) {
@@ -64,8 +91,8 @@ TEST(Frame, ResetStreamFrameConvert) {
   frame.error_code = 12345;
   frame.final_size = 12345;
   GenericFrameLayout gfl;
-  EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStreamDataBlocked, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type, 0x15);
+  EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kResetStream, &gfl), 0);
+  EXPECT_EQ(gfl.frame_type, FrameType::kResetStream);
   char gfl_data[] = {
       0x70, 0x39,  // Stream ID
       0x70, 0x39,  // Application Error Code
@@ -73,4 +100,17 @@ TEST(Frame, ResetStreamFrameConvert) {
   };
   EXPECT_EQ(gfl.data_len, 6);
   EXPECT_EQ(memcmp(gfl.data, gfl_data, 6), 0);
+  //  test convert bin to frame;
+  FrameResetStream recv_frame;
+  FrameType TypeFrame;
+  ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
+  EXPECT_EQ(TypeFrame, FrameType::kResetStream);
+  EXPECT_EQ(recv_frame.stream_id, 12345);
+  EXPECT_EQ(recv_frame.error_code, 12345);
+  EXPECT_EQ(recv_frame.final_size, 12345);
+}
+
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
