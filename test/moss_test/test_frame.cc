@@ -109,8 +109,3 @@ TEST(Frame, ResetStreamFrameConvert) {
   EXPECT_EQ(recv_frame.error_code, 12345);
   EXPECT_EQ(recv_frame.final_size, 12345);
 }
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
