@@ -7,7 +7,7 @@
 
 TEST(Frame, StreamFrameConvert) {
   FrameStream frame;
-  frame.bits = 0x04 | 0x02;
+  frame.bits = 0x07;
   frame.id = 0;
   frame.offset = 64;
   frame.length = 5;
@@ -16,7 +16,7 @@ TEST(Frame, StreamFrameConvert) {
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
   EXPECT_EQ(gfl.frame_type, FrameType::kStream);
   char gfl_data[] = {
-      0x04 | 0x02,                         // bits
+      0x07,                         // bits
       0x00,                                // Stream ID
       0x40,        0x40,                   // Offset
       0x05,                                // Length
