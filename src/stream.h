@@ -41,14 +41,9 @@ class StreamSide {
 
 class SendSide : public StreamSide {
  public:
-  enum class CmdType : cid_t { kWriteData };
-  template <CmdType type>
-  struct CommandSendSide
-      : virtual public CommandBase<GlobalCmdType::kSendSide> {
+  struct CmdWriteData : public CommandBase {
    public:
-    static const CmdType type_ = type;
-  };
-  struct CmdWriteData : virtual public CommandSendSide<CmdType::kWriteData> {
+    std::size_t GetHash() const { return typeid(this).hash_code(); }
     CmdWriteData() {}
     std::shared_ptr<GenericFrameLayout> gfl;
   };
@@ -72,12 +67,6 @@ class SendSide : public StreamSide {
   SendSide();
 
  private:
-  enum CommandID { kWriteData };
-  struct CommandWriteData : public CommandSendSide {
-    explicit CommandWriteData(std::shared_ptr<GenericFrameLayout> gfl)
-        : CommandBase(kWriteData), gfl_(gfl) {}
-    std::shared_ptr<GenericFrameLayout> gfl_
-  };
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CommandSendSide>> cmdQueue_;
   std::queue<std::shared_ptr<GenericFrameLayout>> send_buffer_;
