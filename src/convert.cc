@@ -166,7 +166,7 @@ inline void RemoveFlags(vint *vint_data, const uint &flag) {
       break;
   }
 }
-inline constexpr int FlagToLen(const uint &flag) {
+inline int FlagToLen(const uint &flag) {
   switch (flag) {
     case Flags::OEB:
       return 1;
