@@ -60,7 +60,7 @@ TEST(Frame, StreamFrameConvertWithoutData) {
   EXPECT_EQ(TypeFrame, FrameType::kStream);
   EXPECT_EQ(recv_frame.bits, frame.bits);
   EXPECT_EQ(recv_frame.id, frame.id);
-  EXPECT_EQ(recv_frame.offset, recv_frame.off);
+  EXPECT_EQ(recv_frame.offset, frame.offset);
 }
 
 TEST(Frame, StreamDataBlockedFrameConvert) {
