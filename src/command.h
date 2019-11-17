@@ -28,13 +28,11 @@
 namespace moss {
 // Command ID Type
 typedef uint32_t cid_t;
+enum class GlobalCmdType : cid_t { kSendSide };
+template <GlobalCmdType type>
 struct CommandBase {
  public:
-  explicit CommandBase(cid_t type) : type_(type) {}
-  cid_t GetType() { return type_; }
-
- protected:
-  cid_t type_ = 0;
+  static const GlobalCmdType type_ = type;
 };
 
 template <typename CmdType>

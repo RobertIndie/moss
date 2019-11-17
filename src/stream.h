@@ -33,7 +33,6 @@ typedef uint64_t streamID_t;
 
 class StreamSide {
  public:
-  struct CommandSide : public CommandBase {};
   StreamSide() : fsm_(0) {}
 
  protected:
@@ -42,7 +41,17 @@ class StreamSide {
 
 class SendSide : public StreamSide {
  public:
-  struct CommandSendSide : public CommandSide {};
+  enum class CmdType : cid_t { kWriteData };
+  template <CmdType type>
+  struct CommandSendSide
+      : virtual public CommandBase<GlobalCmdType::kSendSide> {
+   public:
+    static const CmdType type_ = type;
+  };
+  struct CmdWriteData : virtual public CommandSendSide<CmdType::kWriteData> {
+    CmdWriteData() {}
+    std::shared_ptr<GenericFrameLayout> gfl;
+  };
   enum State {
     kReady,
     kSend,
@@ -64,10 +73,10 @@ class SendSide : public StreamSide {
 
  private:
   enum CommandID { kWriteData };
-  struct CommandWriteData : public CommandBase {
+  struct CommandWriteData : public CommandSendSide {
     explicit CommandWriteData(std::shared_ptr<GenericFrameLayout> gfl)
         : CommandBase(kWriteData), gfl_(gfl) {}
-    std::shared_ptr<GenericFrameLayout> gfl_;
+    std::shared_ptr<GenericFrameLayout> gfl_
   };
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CommandSendSide>> cmdQueue_;
