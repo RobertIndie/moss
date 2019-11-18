@@ -46,8 +46,7 @@ SendSide::SendSide() {
             FSM::transition_t(State::kDataSent, State::kDataRecvd));
   fsm_.When(TriggerType::kRecvAck,
             FSM::transition_t(State::kResetSent, State::kResetRecvd));
-  fsm_.On(State::kReady,
-          std::bind(&SendSide::OnReady, shared_from_this()));
+  fsm_.On(State::kReady, std::bind(&SendSide::OnReady, shared_from_this()));
   fsm_.On(State::kSend, std::bind(&SendSide::OnSend, shared_from_this()));
   fsm_.On(State::kDataSent,
           std::bind(&SendSide::OnDataSent, shared_from_this()));
@@ -73,7 +72,7 @@ void SendSide::WriteData(std::shared_ptr<std::stringstream> data) {
   send_buffer_ << data->str();
 }
 
-void SendSide::EndStream() { signal_ &= 1 << SignalBit::kBitEndStream; }
+void SendSide::EndStream() {}
 
 void SendSide::ResetStream() {}
 

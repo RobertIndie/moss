@@ -78,7 +78,7 @@ class SendSide : public StreamSide,
    protected:
     int Call(std::shared_ptr<SendSide> sendSide) { sendSide->ResetStream(); }
   };
-  enum State {
+  enum State : state_t {
     kReady,
     kSend,
     kDataSent,
@@ -86,7 +86,7 @@ class SendSide : public StreamSide,
     kDataRecvd,
     kResetRecvd,
   };
-  enum TriggerType {
+  enum TriggerType : trigger_t {
     kResetStream,        // Send RESET_STREAM
     kStream,             // Send STREAM
     kStreamDataBlocked,  // Send STREAM_DATA_BLOCKED
@@ -98,26 +98,27 @@ class SendSide : public StreamSide,
   SendSide();
 
  private:
+  struct SignalBit {
+    enum Value { kBitEndStream, kBitResetStream };
+  };
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
   size_t flow_credit_ = 1500;
   std::stringstream send_buffer_;
-  enum SignalBit : unsigned char {
-    kBitEndStream = 0x01,
-    kBitResetStream = 0x02
-  };
   unsigned char signal_;
+
   int OnReady();
   int OnSend();
   int OnDataSent();
   int OnResetSent();
   int OnDataRecvd();
   int OnResetRecvd();
-  friend void* CoSendSide(void* arg);
+
   void ConsumeCmd();
   void WriteData(std::shared_ptr<std::stringstream> gfl);
   void EndStream();
   void ResetStream();
+  friend void* CoSendSide(void* arg);
 };
 
 class Stream {
