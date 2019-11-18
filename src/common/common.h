@@ -22,8 +22,8 @@ struct bits_t {
 // functions to infer type, construct bits_t with a member initialization list
 // use a reference to avoid copying. The non-const version lets us extract too
 template <typename T>
-bits_t<T&> bits(T& t) {
-  return bits_t<T&>{t};
+bits_t<T*> bits(T* t) {
+  return bits_t<T*>{t};
 }
 template <typename T>
 bits_t<const T&> bits(const T& t) {
@@ -32,13 +32,13 @@ bits_t<const T&> bits(const T& t) {
 // insertion operator to call ::write() on whatever type of stream
 template <typename S, typename T>
 S& operator<<(S& s, bits_t<T> b) {
-  s.write(reinterpret_cast<char*>(&b.t), sizeof(T));
+  s.write(reinterpret_cast<const char*>(&b.t), sizeof(T));
   return s;
 }
-// extraction operator to call ::read(), require a non-const reference here
+// extraction operator to call ::read(), require a pointer here
 template <typename S, typename T>
-S& operator>>(S& s, bits_t<T&> b) {
-  s.read(reinterpret_cast<char*>(&b.t), sizeof(T));
+S& operator>>(S& s, bits_t<T*> b) {
+  s.read(reinterpret_cast<char*>(b.t), sizeof(T));
   return s;
 }
 

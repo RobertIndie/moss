@@ -46,26 +46,34 @@ SendSide::SendSide() {
             FSM::transition_t(State::kDataSent, State::kDataRecvd));
   fsm_.When(TriggerType::kRecvAck,
             FSM::transition_t(State::kResetSent, State::kResetRecvd));
-  fsm_.On(State::kReady, std::bind(&SendSide::OnReady, *this));
-  fsm_.On(State::kSend, std::bind(&SendSide::OnSend, *this));
-  fsm_.On(State::kDataSent, std::bind(&SendSide::OnDataSent, *this));
-  fsm_.On(State::kResetSent, std::bind(&SendSide::OnResetSent, *this));
-  fsm_.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, *this));
-  fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, *this));
-  routine_ = std::shared_ptr<AsynRoutine>(
-      reinterpret_cast<AsynRoutine*>(new Coroutine(CoSendSide, this)));
-  cmdQueue_ = std::shared_ptr<CommandQueue>(
-      reinterpret_cast<CommandQueue*>(new CoCmdQueue(routine_)));
+  fsm_.On(State::kReady,
+          std::bind(&SendSide::OnReady, shared_from_this()));
+  fsm_.On(State::kSend, std::bind(&SendSide::OnSend, shared_from_this()));
+  fsm_.On(State::kDataSent,
+          std::bind(&SendSide::OnDataSent, shared_from_this()));
+  fsm_.On(State::kResetSent,
+          std::bind(&SendSide::OnResetSent, shared_from_this()));
+  fsm_.On(State::kDataRecvd,
+          std::bind(&SendSide::OnDataRecvd, shared_from_this()));
+  fsm_.On(State::kResetRecvd,
+          std::bind(&SendSide::OnResetRecvd, shared_from_this()));
+  routine_ = std::shared_ptr<AsynRoutine>(reinterpret_cast<AsynRoutine*>(
+      new Coroutine(CoSendSide, &*shared_from_this())));
+  cmdQueue_ = std::shared_ptr<CommandQueue<CmdSendSide>>(
+      reinterpret_cast<CommandQueue<CmdSendSide>*>(
+          new CoCmdQueue<CmdSendSide>(routine_)));
   routine_->Resume();  // Create Stream (Sending)
 }
 
-void SendSide::ConsumeCmd() {}
-
-void SendSide::WriteData(std::shared_ptr<GenericFrameLayout> gfl) {
-  send_buffer_.push(gfl);
+void SendSide::ConsumeCmd() {
+  auto cmd = cmdQueue_->WaitAndExecuteCmds(shared_from_this());
 }
 
-void SendSide::EndStream() {}
+void SendSide::WriteData(std::shared_ptr<std::stringstream> data) {
+  send_buffer_ << data->str();
+}
+
+void SendSide::EndStream() { signal_ &= 1 << SignalBit::kBitEndStream; }
 
 void SendSide::ResetStream() {}
 

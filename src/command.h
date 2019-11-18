@@ -32,22 +32,27 @@ struct CommandBase {
 
  protected:
   virtual int Execute(std::shared_ptr<void> arg) = 0;
+  template <typename CmdType>
+  friend class CommandQueue;
 };
 
+template <typename CmdType>
 class CommandQueue {
  public:
-  virtual void PushCmd(std::shared_ptr<CommandBase> cmd) = 0;
-  virtual std::shared_ptr<CommandBase> WaitCmd() = 0;
+  virtual void PushCmd(std::shared_ptr<CmdType> cmd) = 0;
+  virtual std::shared_ptr<CmdType> WaitCmd() = 0;
+  virtual int WaitAndExecuteCmds(std::shared_ptr<void> arg) = 0;
 };
 
-class CoCmdQueue : CommandQueue {
+template <typename CmdType>
+class CoCmdQueue : public CommandQueue<CmdType> {
  public:
   explicit CoCmdQueue(std::shared_ptr<AsynRoutine> co) : co_(co) {}
-  void PushCmd(std::shared_ptr<CommandBase> command) {
+  void PushCmd(std::shared_ptr<CmdType> command) {
     command_queue_.push(command);
     co_->Resume();
   }
-  std::shared_ptr<CommandBase> WaitCmd() {
+  std::shared_ptr<CmdType> WaitCmd() {
     while (command_queue_.size() == 0) {
       co_->Suspend();
     }
@@ -55,10 +60,21 @@ class CoCmdQueue : CommandQueue {
     command_queue_.pop();
     return cmd;
   }
+  int WaitAndExecuteCmds(std::shared_ptr<void> arg) {
+    while (command_queue_.size() == 0) {
+      co_->Suspend();
+    }
+    int cmd_count = command_queue_.size();
+    for (int i = 0; i < cmd_count; ++i) {
+      auto cmd = command_queue_.front();
+      cmd->Execute(arg);
+    }
+    return cmd_count;
+  }
 
  protected:
   std::shared_ptr<AsynRoutine> co_;
-  std::queue<std::shared_ptr<CommandBase> > command_queue_;
+  std::queue<std::shared_ptr<CmdType> > command_queue_;
 };
 
 }  // namespace moss
