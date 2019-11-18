@@ -29,6 +29,9 @@ namespace moss {
 struct CommandBase {
  public:
   virtual std::size_t GetHash() const { return typeid(this).hash_code(); }
+
+ protected:
+  virtual int Execute(std::shared_ptr<void> arg) = 0;
 };
 
 class CommandQueue {

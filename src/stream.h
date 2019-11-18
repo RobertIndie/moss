@@ -41,11 +41,40 @@ class StreamSide {
 
 class SendSide : public StreamSide {
  public:
-  struct CmdWriteData : public CommandBase {
+  struct CmdSendSide : public CommandBase {
+    int Execute(std::shared_ptr<void> arg) {
+      auto sendSide = std::static_pointer_cast<SendSide>(arg);
+      return Call(sendSide);
+    }
+
+   protected:
+    virtual int Call(std::shared_ptr<SendSide> sendSide) = 0;
+  };
+  struct CmdWriteData : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
-    CmdWriteData() {}
-    std::shared_ptr<GenericFrameLayout> gfl;
+    explicit CmdWriteData(std::shared_ptr<GenericFrameLayout> gfl)
+        : gfl_(gfl) {}
+
+   protected:
+    std::shared_ptr<GenericFrameLayout> gfl_;
+    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->WriteData(gfl_); }
+  };
+  struct CmdEndStream : public CmdSendSide {
+   public:
+    std::size_t GetHash() const { return typeid(this).hash_code(); }
+    CmdEndStream() {}
+
+   protected:
+    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->EndStream(); }
+  };
+  struct CmdResetStream : public CmdSendSide {
+   public:
+    std::size_t GetHash() const { return typeid(this).hash_code(); }
+    CmdResetStream() {}
+
+   protected:
+    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->ResetStream(); }
   };
   enum State {
     kReady,
@@ -68,7 +97,7 @@ class SendSide : public StreamSide {
 
  private:
   std::shared_ptr<AsynRoutine> routine_;
-  std::shared_ptr<CommandQueue<CommandSendSide>> cmdQueue_;
+  std::shared_ptr<CommandQueue> cmdQueue_;
   std::queue<std::shared_ptr<GenericFrameLayout>> send_buffer_;
   int OnReady();
   int OnSend();
@@ -78,6 +107,9 @@ class SendSide : public StreamSide {
   int OnResetRecvd();
   friend void* CoSendSide(void* arg);
   void ConsumeCmd();
+  void WriteData(std::shared_ptr<GenericFrameLayout> gfl);
+  void EndStream();
+  void ResetStream();
 };
 
 class Stream {

@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <memory>
+#include <sstream>
 #include <string>
 #include "./co_routine.h"
 #include "glog/logging.h"
