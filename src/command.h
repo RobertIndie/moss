@@ -17,10 +17,12 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <queue>
+#include <type_traits>
 #include <vector>
 #include "./routine.h"
 #include "./util/util.h"
@@ -38,6 +40,9 @@ struct CommandBase {
 
 template <typename CmdType>
 class CommandQueue {
+  static_assert(std::is_base_of<CommandBase, CmdType>::value,
+                "class CmdType must inherit from class CommandBase");
+
  public:
   virtual void PushCmd(std::shared_ptr<CmdType> cmd) = 0;
   virtual std::shared_ptr<CmdType> WaitCmd() = 0;
