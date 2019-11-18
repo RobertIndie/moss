@@ -1,3 +1,6 @@
+/**
+ * Copyright 2019 Linkworld Open Team
+ * */
 #include <cstring>
 #include "./frame.h"
 #include "gtest/gtest.h"
@@ -106,3 +109,4 @@ TEST(Frame, ResetStreamFrameConvert) {
   EXPECT_EQ(recv_frame.error_code, 12345);
   EXPECT_EQ(recv_frame.final_size, 12345);
 }
+

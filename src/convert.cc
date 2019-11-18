@@ -179,6 +179,7 @@ inline int FlagToLen(const uint &flag) {
     default:
       return 0;
   }
+  return 0;
 }
 //  从二进制数据中写入*vint数组中  这个函数针对FSDB FRS类型的对象
 inline void WriteBinToVint(const char *const src_data, vint **dest_data,
