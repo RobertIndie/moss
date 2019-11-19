@@ -66,9 +66,8 @@ class CoCmdQueue : public CommandQueue<CmdType> {
     return cmd;
   }
   int WaitAndExecuteCmds(std::shared_ptr<void> arg) {
-    while (command_queue_.size() == 0) {
-      co_->Suspend();
-    }
+    co_->Suspend();
+    if (command_queue_.size() == 0) return 0;  // The timer is up
     int cmd_count = command_queue_.size();
     for (int i = 0; i < cmd_count; ++i) {
       auto cmd = command_queue_.front();
@@ -80,6 +79,11 @@ class CoCmdQueue : public CommandQueue<CmdType> {
  protected:
   std::shared_ptr<AsynRoutine> co_;
   std::queue<std::shared_ptr<CmdType> > command_queue_;
+};
+
+class CommandExecutor {
+ public:
+  virtual void PushCommand(std::shared_ptr<CommandBase> cmd) = 0;
 };
 
 }  // namespace moss

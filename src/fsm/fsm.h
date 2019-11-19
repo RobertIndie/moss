@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
-#ifndef SRC_FSM_FSM_H_
-#define SRC_FSM_FSM_H_
+#ifndef FSM_FSM_H_
+#define FSM_FSM_H_
 #include <functional>
 #include <map>
 #include <tuple>
@@ -30,6 +30,7 @@ class FSM {
   explicit FSM(state_t init_state) : state_(init_state) {}
   typedef std::function<int()> on_func_t;
   typedef std::pair<state_t, state_t> transition_t;
+  void SetState(state_t state) { state_ = state; }
   state_t GetState() const { return state_; }
   void When(const trigger_t& trigger, const transition_t& transition);
   void On(const state_t& state, const std::function<int()>& on_func);
@@ -42,4 +43,4 @@ class FSM {
   std::map<state_t, on_func_t> state_events;
 };
 
-#endif  // SRC_FSM_FSM_H_
+#endif  // FSM_FSM_H_

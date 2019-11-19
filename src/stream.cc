@@ -27,26 +27,17 @@ void* CoSendSide(void* arg) {
   }
 }
 
-SendSide::SendSide() {
-  fsm_.When(TriggerType::kStream,
-            FSM::transition_t(State::kReady, State::kSend));
-  fsm_.When(TriggerType::kStreamDataBlocked,
-            FSM::transition_t(State::kReady, State::kSend));
-  fsm_.When(TriggerType::kCreateBiStream,
-            FSM::transition_t(State::kReady, State::kSend));
-  fsm_.When(TriggerType::kStreamFin,
+SendSide::SendSide(std::shared_ptr<Stream> stream) : stream_(stream) {
+  fsm_.When(TriggerType::kSendFIN,
             FSM::transition_t(State::kSend, State::kDataSent));
-  fsm_.When(TriggerType::kResetStream,
-            FSM::transition_t(State::kReady, State::kResetSent));
   fsm_.When(TriggerType::kResetStream,
             FSM::transition_t(State::kSend, State::kResetSent));
   fsm_.When(TriggerType::kResetStream,
             FSM::transition_t(State::kDataSent, State::kResetSent));
-  fsm_.When(TriggerType::kRecvAllACKs,
+  fsm_.When(TriggerType::kRecvACKs,
             FSM::transition_t(State::kDataSent, State::kDataRecvd));
-  fsm_.When(TriggerType::kRecvAck,
+  fsm_.When(TriggerType::kRecvResetACK,
             FSM::transition_t(State::kResetSent, State::kResetRecvd));
-  fsm_.On(State::kReady, std::bind(&SendSide::OnReady, shared_from_this()));
   fsm_.On(State::kSend, std::bind(&SendSide::OnSend, shared_from_this()));
   fsm_.On(State::kDataSent,
           std::bind(&SendSide::OnDataSent, shared_from_this()));
@@ -56,6 +47,7 @@ SendSide::SendSide() {
           std::bind(&SendSide::OnDataRecvd, shared_from_this()));
   fsm_.On(State::kResetRecvd,
           std::bind(&SendSide::OnResetRecvd, shared_from_this()));
+  fsm_.SetState(State::kSend);
   routine_ = std::shared_ptr<AsynRoutine>(reinterpret_cast<AsynRoutine*>(
       new Coroutine(CoSendSide, &*shared_from_this())));
   cmdQueue_ = std::shared_ptr<CommandQueue<CmdSendSide>>(
@@ -63,6 +55,35 @@ SendSide::SendSide() {
           new CoCmdQueue<CmdSendSide>(routine_)));
   routine_->Resume();  // Create Stream (Sending)
 }
+
+void SendSide::SendData() {
+  // TODO(connection): send data
+}
+
+void SendSide::SendDataBlocked(std::streampos data_limit) {
+  // TODO(gfl-fraeme): use frame conversion
+  std::shared_ptr<GenericFrameLayout> gfl(new GenericFrameLayout);
+  gfl->frame_type = FrameType::kStreamDataBlocked;
+  std::shared_ptr<CmdSendGFL> cmd(new CmdSendGFL(stream_->id_, gfl));
+  stream_->conn_->PushCommand(cmd);
+}
+
+int SendSide::OnSend() {
+  if (flow_credit_ <= send_buffer_.tellg()) {
+  }
+  if (GetSendBufferLen() > 0) {
+    SendData();
+  }
+  return 0;
+}
+
+int SendSide::OnDataSent() { return 0; }
+
+int SendSide::OnResetSent() { return 0; }
+
+int SendSide::OnDataRecvd() { return 0; }
+
+int SendSide::OnResetRecvd() { return 0; }
 
 void SendSide::ConsumeCmd() {
   auto cmd = cmdQueue_->WaitAndExecuteCmds(shared_from_this());
@@ -72,8 +93,10 @@ void SendSide::WriteData(std::shared_ptr<std::stringstream> data) {
   send_buffer_ << data->str();
 }
 
-void SendSide::EndStream() {}
+void SendSide::EndStream() { AddSignal(signal_, SignalMask::kBitEndStream); }
 
-void SendSide::ResetStream() {}
+void SendSide::ResetStream() {
+  AddSignal(signal_, SignalMask::kBitResetStream);
+}
 
 }  // namespace moss

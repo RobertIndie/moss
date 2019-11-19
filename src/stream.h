@@ -32,6 +32,9 @@ enum ConnectionType { kClient = 0, kServer = 1 };
 typedef ConnectionType Initializer;
 typedef uint64_t streamID_t;
 
+class Connection;
+struct CmdSendGFL;
+
 class StreamSide {
  public:
   StreamSide() : fsm_(0) {}
@@ -40,7 +43,10 @@ class StreamSide {
   FSM fsm_;
 };
 
+class Stream;
+
 class SendSide : public StreamSide,
+                 public CommandExecutor,
                  public std::enable_shared_from_this<SendSide> {
  public:
   struct CmdSendSide : public CommandBase {
@@ -78,8 +84,30 @@ class SendSide : public StreamSide,
    protected:
     int Call(std::shared_ptr<SendSide> sendSide) { sendSide->ResetStream(); }
   };
+  //                              O
+  //                              +
+  //                              | Create Stream
+  //                              |
+  // Send STREAM/                 v
+  //      STREAM_DATA_BLOCKED +-------+  Send RESET_STREAM
+  //             +----------->+ Send  +-----------------------+
+  //             |            |       |                       |
+  //             +------------+-------+                       |
+  //                              |                           |
+  //                              | Send STREAM+FIN           |
+  //                              v                           v
+  //                          +-------+  Send RESET_STREAM+-------+
+  //                          | Data  +------------------>+ Reset |
+  //                          | Sent  |                   | Sent  |
+  //                          +-------+                   +-------+
+  //                              |                           |
+  //                              | Recv All ACKs             | Recv ACK
+  //                              v                           v
+  //                          +-------+                   +-------+
+  //                          | Data  |                   | Reset |
+  //                          | Recvd |                   | Recvd |
+  //                          +-------+                   +-------+
   enum State : state_t {
-    kReady,
     kSend,
     kDataSent,
     kResetSent,
@@ -87,27 +115,34 @@ class SendSide : public StreamSide,
     kResetRecvd,
   };
   enum TriggerType : trigger_t {
-    kResetStream,        // Send RESET_STREAM
-    kStream,             // Send STREAM
-    kStreamDataBlocked,  // Send STREAM_DATA_BLOCKED
-    kCreateBiStream,     // Peer Creates Bidirectional Steram
-    kStreamFin,          // Send STREAM + FIN
-    kRecvAllACKs,        // Recv All ACKs
-    kRecvAck,            // Recv ACK
+    kResetStream,   // Reset stream
+    kSendFIN,       // Send Finish : Send -> Data Sent
+    kRecvACKs,      // Recv All ACKs : Data Sent -> Data Recvd
+    kRecvResetACK,  // Recv Reset ACK : Reset Sent -> Reset Recvd
   };
-  SendSide();
+  explicit SendSide(std::shared_ptr<Stream> stream);
+  void PushCommand(std::shared_ptr<CommandBase> cmd) {
+    cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdSendSide>(cmd));
+  }
 
  private:
-  struct SignalBit {
+  struct SignalMask {
     enum Value { kBitEndStream, kBitResetStream };
   };
+  std::shared_ptr<Stream> stream_;
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
-  size_t flow_credit_ = 1500;
+  unsigned int flow_credit_ = 1500;
+  // unsigned int mss_ = 512;
   std::stringstream send_buffer_;
   unsigned char signal_;
+  inline std::streampos GetSendBufferLen() {
+    return send_buffer_.tellp() - send_buffer_.tellg();
+  }
 
-  int OnReady();
+  void SendData();
+  void SendDataBlocked(std::streampos data_limit);
+
   int OnSend();
   int OnDataSent();
   int OnResetSent();
@@ -118,10 +153,11 @@ class SendSide : public StreamSide,
   void WriteData(std::shared_ptr<std::stringstream> gfl);
   void EndStream();
   void ResetStream();
+
   friend void* CoSendSide(void* arg);
 };
 
-class Stream {
+class Stream : public std::enable_shared_from_this<Stream> {
  public:
   enum RecvSideState {
     kRecv,
@@ -131,16 +167,22 @@ class Stream {
     kDataRead,
     kResetRead
   };
-
-  Stream(streamID_t id, Initializer initer, Directional direct)
-      : id_(id), initer_(initer), direct_(direct), sendSide_(), recvSide_() {}
+  streamID_t id_;
+  std::shared_ptr<Connection> conn_;
+  Stream(std::shared_ptr<Connection> conn, streamID_t id, Initializer initer,
+         Directional direct)
+      : conn_(conn),
+        id_(id),
+        initer_(initer),
+        direct_(direct),
+        sendSide_(shared_from_this()),
+        recvSide_(shared_from_this()) {}
 
 #ifdef __MOSS_TEST
  public:
 #else
  private:
 #endif
-  streamID_t id_;
   Initializer initer_;
   Directional direct_;
   SendSide sendSide_;

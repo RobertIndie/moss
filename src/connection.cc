@@ -26,11 +26,21 @@ streamID_t Connection::NewID(const Initializer& initer,
 
 std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
   auto id = NewID(type_, direct);
-  std::shared_ptr<Stream> stream(new Stream(id, type_, direct));
+  std::shared_ptr<Stream> stream(
+      new Stream(shared_from_this(), id, type_, direct));
   mapStreams_[id] = stream;
   PLOG(INFO) << "[Connection]Create Stream: " << LOG_VALUE(id)
              << LOG_VALUE(type_) << LOG_VALUE(direct);
   return stream;
+}
+
+void Connection::PushCommand(std::shared_ptr<CommandBase> cmd) {
+  cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdConnection>(cmd));
+}
+
+void Connection::SendGFL(streamID_t stream_id,
+                         std::shared_ptr<GenericFrameLayout> gfl) {
+  mapStreamGFL_[stream_id].push(gfl);
 }
 
 }  // namespace moss
