@@ -44,6 +44,7 @@ class StreamSide {
 };
 
 class Stream;
+class SendSide;
 
 class SendSide : public StreamSide,
                  public CommandExecutor,
@@ -168,9 +169,9 @@ class Stream : public std::enable_shared_from_this<Stream> {
     kResetRead
   };
   streamID_t id_;
-  std::shared_ptr<Connection> conn_;
-  Stream(std::shared_ptr<Connection> conn, streamID_t id, Initializer initer,
-         Directional direct)
+  std::shared_ptr<CommandExecutor> conn_;
+  Stream(std::shared_ptr<CommandExecutor> conn, streamID_t id,
+         Initializer initer, Directional direct)
       : conn_(conn),
         id_(id),
         initer_(initer),

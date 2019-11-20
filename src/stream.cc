@@ -65,7 +65,7 @@ void SendSide::SendDataBlocked(std::streampos data_limit) {
   std::shared_ptr<GenericFrameLayout> gfl(new GenericFrameLayout);
   gfl->frame_type = FrameType::kStreamDataBlocked;
   std::shared_ptr<CmdSendGFL> cmd(new CmdSendGFL(stream_->id_, gfl));
-  stream_->conn_->PushCommand(cmd);
+  stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
 
 int SendSide::OnSend() {

@@ -36,6 +36,7 @@ struct CmdConnection : public CommandBase {
  protected:
   virtual int Call(std::shared_ptr<Connection> connection) = 0;
 };
+
 struct CmdSendGFL : public CmdConnection {
  public:
   std::size_t GetHash() const { return typeid(this).hash_code(); }
@@ -44,7 +45,7 @@ struct CmdSendGFL : public CmdConnection {
   streamID_t stream_id_;
   std::shared_ptr<GenericFrameLayout> gfl_;
   int Call(std::shared_ptr<Connection> connection) {
-    connection->SendGFL(stream_id_, gfl_);
+    //connection->SendGFL(stream_id_, gfl_);
   }
 };
 
