@@ -24,16 +24,9 @@
 #include "./command.h"
 #include "./frame.h"
 #include "./fsm/fsm.h"
+#include "./interfaces.h"
 
 namespace moss {
-
-enum Directional { kBidirectional = 0, kUnidirectional = 1 };
-enum ConnectionType { kClient = 0, kServer = 1 };
-typedef ConnectionType Initializer;
-typedef uint64_t streamID_t;
-
-class Connection;
-struct CmdSendGFL;
 
 class StreamSide {
  public:

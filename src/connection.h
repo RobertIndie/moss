@@ -22,41 +22,24 @@
 #include <queue>
 #include "./command.h"
 #include "./frame.h"
+#include "./interfaces.h"
 #include "./routine.h"
 #include "./stream.h"
 
 namespace moss {
 
-struct CmdConnection : public CommandBase {
-  int Execute(std::shared_ptr<void> arg) {
-    auto connection = std::static_pointer_cast<Connection>(arg);
-    return Call(connection);
-  }
-
- protected:
-  virtual int Call(std::shared_ptr<Connection> connection) = 0;
-};
-
-struct CmdSendGFL : public CmdConnection {
- public:
-  std::size_t GetHash() const { return typeid(this).hash_code(); }
-  CmdSendGFL(streamID_t stream_id, std::shared_ptr<GenericFrameLayout> gfl)
-      : stream_id_(stream_id), gfl_(gfl) {}
-  streamID_t stream_id_;
-  std::shared_ptr<GenericFrameLayout> gfl_;
-  int Call(std::shared_ptr<Connection> connection) {
-    //connection->SendGFL(stream_id_, gfl_);
-  }
-};
-
-class Connection : public CommandExecutor,
-                   public std::enable_shared_from_this<Connection> {
+class Connection : virtual public IConnection, public CommandExecutor {
  public:
   explicit Connection(const ConnectionType& type) : type_(type) {}
   std::shared_ptr<Stream> CreateStream(Directional direct);
-  void PushCommand(std::shared_ptr<CommandBase> cmd);
 
+#pragma region CommandExecutor
+  void PushCommand(std::shared_ptr<CommandBase> cmd);
+#pragma endregion
+
+#pragma region IConnection
   void SendGFL(streamID_t stream_id, std::shared_ptr<GenericFrameLayout> gfl);
+#pragma endregion
 
  private:
   streamID_t nextIDPrefix_ = 0;

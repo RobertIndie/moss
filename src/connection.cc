@@ -27,7 +27,8 @@ streamID_t Connection::NewID(const Initializer& initer,
 std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
   auto id = NewID(type_, direct);
   std::shared_ptr<Stream> stream(
-      new Stream(shared_from_this(), id, type_, direct));
+      new Stream(std::dynamic_pointer_cast<Connection>(shared_from_this()), id,
+                 type_, direct));
   mapStreams_[id] = stream;
   PLOG(INFO) << "[Connection]Create Stream: " << LOG_VALUE(id)
              << LOG_VALUE(type_) << LOG_VALUE(direct);
