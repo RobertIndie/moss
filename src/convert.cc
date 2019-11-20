@@ -104,15 +104,13 @@ int ConvertFrameToGFL(const void *const frame, const FrameType Frame_type,
                       GenericFrameLayout *gfl) {
   switch (Frame_type) {
     case FrameType::kStream:
-      return FSToGFL(reinterpret_cast<FrameStream *>(const_cast<void *>(frame)),
-                     gfl);
+      return FSToGFL(reinterpret_cast<const FrameStream *const>((frame)), gfl);
     case FrameType::kStreamDataBlocked:
       return FSDBToGFL(
-          reinterpret_cast<FrameStreamDataBlocked *>(const_cast<void *>(frame)),
-          gfl);
+          reinterpret_cast<const FrameStreamDataBlocked *const>((frame)), gfl);
     case FrameType::kResetStream:
-      return FRSToGFL(
-          reinterpret_cast<FrameResetStream *>(const_cast<void *>(frame)), gfl);
+      return FRSToGFL(reinterpret_cast<const FrameResetStream *const>((frame)),
+                      gfl);
     default:
       return -1;
   }
