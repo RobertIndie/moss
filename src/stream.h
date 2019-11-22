@@ -114,7 +114,7 @@ class SendSide : public StreamSide,
     kRecvACKs,      // Recv All ACKs : Data Sent -> Data Recvd
     kRecvResetACK,  // Recv Reset ACK : Reset Sent -> Reset Recvd
   };
-  explicit SendSide(std::shared_ptr<Stream> stream);
+  explicit SendSide(Stream* const stream);
   void PushCommand(std::shared_ptr<CommandBase> cmd) {
     cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdSendSide>(cmd));
   }
@@ -123,7 +123,7 @@ class SendSide : public StreamSide,
   struct SignalMask {
     enum Value { kBitEndStream, kBitResetStream };
   };
-  std::shared_ptr<Stream> stream_;
+  Stream* const stream_;
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
   unsigned int flow_credit_ = 1500;
@@ -151,7 +151,7 @@ class SendSide : public StreamSide,
   friend void* CoSendSide(void* arg);
 };
 
-class Stream : public std::enable_shared_from_this<Stream> {
+class Stream {
  public:
   enum RecvSideState {
     kRecv,
@@ -162,15 +162,15 @@ class Stream : public std::enable_shared_from_this<Stream> {
     kResetRead
   };
   streamID_t id_;
-  std::shared_ptr<CommandExecutor> conn_;
-  Stream(std::shared_ptr<CommandExecutor> conn, streamID_t id,
-         Initializer initer, Directional direct)
+  CommandExecutor* const conn_;
+  Stream(CommandExecutor* const conn, streamID_t id, Initializer initer,
+         Directional direct)
       : conn_(conn),
         id_(id),
         initer_(initer),
         direct_(direct),
-        sendSide_(shared_from_this()),
-        recvSide_(shared_from_this()) {}
+        sendSide_(this),
+        recvSide_(this) {}
 
 #ifdef __MOSS_TEST
  public:

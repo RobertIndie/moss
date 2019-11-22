@@ -27,7 +27,7 @@ enum ConnectionType { kClient = 0, kServer = 1 };
 typedef ConnectionType Initializer;
 typedef uint64_t streamID_t;
 
-class IConnection : public std::enable_shared_from_this<IConnection> {
+class IConnection {
  public:
   virtual void SendGFL(streamID_t stream_id,
                        std::shared_ptr<GenericFrameLayout> gfl) = 0;

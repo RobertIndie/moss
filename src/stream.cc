@@ -27,7 +27,7 @@ void* CoSendSide(void* arg) {
   }
 }
 
-SendSide::SendSide(std::shared_ptr<Stream> stream) : stream_(stream) {
+SendSide::SendSide(Stream* const stream) : stream_(stream) {
   fsm_.When(TriggerType::kSendFIN,
             FSM::transition_t(State::kSend, State::kDataSent));
   fsm_.When(TriggerType::kResetStream,
