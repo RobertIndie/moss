@@ -29,8 +29,6 @@ std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
   std::shared_ptr<Stream> stream =
       std::make_shared<Stream>(this, id, type_, direct);
   mapStreams_[id] = stream;
-  PLOG(INFO) << "[Connection]Create Stream: " << LOG_VALUE(id)
-             << LOG_VALUE(type_) << LOG_VALUE(direct);
   return stream;
 }
 
