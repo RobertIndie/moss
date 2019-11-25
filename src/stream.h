@@ -116,8 +116,13 @@ class SendSide : public StreamSide, public CommandExecutor {
   void PushCommand(std::shared_ptr<CommandBase> cmd) {
     cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdSendSide>(cmd));
   }
+#ifdef __MOST_TEST
+
+ public:
+#else
 
  private:
+#endif
   struct SignalMask {
     enum Value { kBitEndStream, kBitResetStream };
   };
@@ -171,8 +176,10 @@ class Stream {
         recvSide_(this) {}
 
 #ifdef __MOSS_TEST
+
  public:
 #else
+
  private:
 #endif
   Initializer initer_;

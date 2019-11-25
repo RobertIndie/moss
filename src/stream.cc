@@ -66,6 +66,7 @@ void SendSide::SendDataBlocked(std::streampos data_limit) {
 
 int SendSide::OnSend() {
   if (flow_credit_ <= send_buffer_.tellg()) {
+    SendDataBlocked(flow_credit_);
   }
   if (GetSendBufferLen() > 0) {
     SendData();
@@ -81,9 +82,7 @@ int SendSide::OnDataRecvd() { return 0; }
 
 int SendSide::OnResetRecvd() { return 0; }
 
-void SendSide::ConsumeCmd() {
-  auto cmd = cmdQueue_->WaitAndExecuteCmds(this);
-}
+void SendSide::ConsumeCmd() { auto cmd = cmdQueue_->WaitAndExecuteCmds(this); }
 
 void SendSide::WriteData(std::shared_ptr<std::stringstream> data) {
   send_buffer_ << data->str();
