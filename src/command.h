@@ -33,7 +33,7 @@ struct CommandBase {
   virtual std::size_t GetHash() const { return typeid(this).hash_code(); }
 
  protected:
-  virtual int Execute(std::shared_ptr<void> arg) = 0;
+  virtual int Execute(void*const arg) = 0;
   template <typename CmdType>
   friend class CommandQueue;
 };
@@ -46,7 +46,7 @@ class CommandQueue {
  public:
   virtual void PushCmd(std::shared_ptr<CmdType> cmd) = 0;
   virtual std::shared_ptr<CmdType> WaitCmd() = 0;
-  virtual int WaitAndExecuteCmds(std::shared_ptr<void> arg) = 0;
+  virtual int WaitAndExecuteCmds(void*const arg) = 0;
 };
 
 template <typename CmdType>
@@ -65,7 +65,7 @@ class CoCmdQueue : public CommandQueue<CmdType> {
     command_queue_.pop();
     return cmd;
   }
-  int WaitAndExecuteCmds(std::shared_ptr<void> arg) {
+  int WaitAndExecuteCmds(void*const arg) {
     co_->Suspend();
     if (command_queue_.size() == 0) return 0;  // The timer is up
     int cmd_count = command_queue_.size();

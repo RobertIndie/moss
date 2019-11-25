@@ -35,13 +35,13 @@ class IConnection {
 
 #pragma region Commands
 struct CmdConnection : public CommandBase {
-  int Execute(std::shared_ptr<void> arg) {
-    auto connection = std::static_pointer_cast<IConnection>(arg);
+  int Execute(void*const arg) {
+    auto connection = static_cast<IConnection*const>(arg);
     return Call(connection);
   }
 
  protected:
-  virtual int Call(std::shared_ptr<IConnection> connection) = 0;
+  virtual int Call(IConnection*const connection) = 0;
 };
 
 struct CmdSendGFL : public CmdConnection {
@@ -51,7 +51,7 @@ struct CmdSendGFL : public CmdConnection {
       : stream_id_(stream_id), gfl_(gfl) {}
   streamID_t stream_id_;
   std::shared_ptr<GenericFrameLayout> gfl_;
-  int Call(std::shared_ptr<IConnection> connection) {
+  int Call(IConnection*const connection) {
     connection->SendGFL(stream_id_, gfl_);
   }
 };

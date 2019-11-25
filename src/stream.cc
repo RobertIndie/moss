@@ -38,18 +38,14 @@ SendSide::SendSide(Stream* const stream) : stream_(stream) {
             FSM::transition_t(State::kDataSent, State::kDataRecvd));
   fsm_.When(TriggerType::kRecvResetACK,
             FSM::transition_t(State::kResetSent, State::kResetRecvd));
-  fsm_.On(State::kSend, std::bind(&SendSide::OnSend, shared_from_this()));
-  fsm_.On(State::kDataSent,
-          std::bind(&SendSide::OnDataSent, shared_from_this()));
-  fsm_.On(State::kResetSent,
-          std::bind(&SendSide::OnResetSent, shared_from_this()));
-  fsm_.On(State::kDataRecvd,
-          std::bind(&SendSide::OnDataRecvd, shared_from_this()));
-  fsm_.On(State::kResetRecvd,
-          std::bind(&SendSide::OnResetRecvd, shared_from_this()));
+  fsm_.On(State::kSend, std::bind(&SendSide::OnSend, this));
+  fsm_.On(State::kDataSent, std::bind(&SendSide::OnDataSent, this));
+  fsm_.On(State::kResetSent, std::bind(&SendSide::OnResetSent, this));
+  fsm_.On(State::kDataRecvd, std::bind(&SendSide::OnDataRecvd, this));
+  fsm_.On(State::kResetRecvd, std::bind(&SendSide::OnResetRecvd, this));
   fsm_.SetState(State::kSend);
-  routine_ = std::shared_ptr<AsynRoutine>(reinterpret_cast<AsynRoutine*>(
-      new Coroutine(CoSendSide, &*shared_from_this())));
+  routine_ = std::shared_ptr<AsynRoutine>(
+      reinterpret_cast<AsynRoutine*>(new Coroutine(CoSendSide, this)));
   cmdQueue_ = std::shared_ptr<CommandQueue<CmdSendSide>>(
       reinterpret_cast<CommandQueue<CmdSendSide>*>(
           new CoCmdQueue<CmdSendSide>(routine_)));
@@ -86,7 +82,7 @@ int SendSide::OnDataRecvd() { return 0; }
 int SendSide::OnResetRecvd() { return 0; }
 
 void SendSide::ConsumeCmd() {
-  auto cmd = cmdQueue_->WaitAndExecuteCmds(shared_from_this());
+  auto cmd = cmdQueue_->WaitAndExecuteCmds(this);
 }
 
 void SendSide::WriteData(std::shared_ptr<std::stringstream> data) {

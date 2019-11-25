@@ -39,18 +39,16 @@ class StreamSide {
 class Stream;
 class SendSide;
 
-class SendSide : public StreamSide,
-                 public CommandExecutor,
-                 public std::enable_shared_from_this<SendSide> {
+class SendSide : public StreamSide, public CommandExecutor {
  public:
   struct CmdSendSide : public CommandBase {
-    int Execute(std::shared_ptr<void> arg) {
-      auto sendSide = std::static_pointer_cast<SendSide>(arg);
+    int Execute(void* const arg) {
+      auto sendSide = static_cast<SendSide* const>(arg);
       return Call(sendSide);
     }
 
    protected:
-    virtual int Call(std::shared_ptr<SendSide> sendSide) = 0;
+    virtual int Call(SendSide* const sendSide) = 0;
   };
   struct CmdWriteData : public CmdSendSide {
    public:
