@@ -45,9 +45,9 @@ void FSM::Trigger(const trigger_t& trigger) {
   state_ = trans_ele->second;
 }
 
-void FSM::Run() const {
+int FSM::Run() const {
   auto ele = state_events.find(state_);
   if (ele != state_events.end()) {
-    ele->second();
+    return ele->second();
   }
 }
