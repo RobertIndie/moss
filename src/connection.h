@@ -30,7 +30,7 @@ namespace moss {
 
 class Connection : virtual public IConnection, public CommandExecutor {
  public:
-  explicit Connection(const ConnectionType& type) : type_(type) {}
+  explicit Connection(const ConnectionType& type);
   std::shared_ptr<Stream> CreateStream(Directional direct);
 
 #pragma region CommandExecutor

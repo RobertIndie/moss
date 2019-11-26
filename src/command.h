@@ -31,6 +31,7 @@ namespace moss {
 struct CommandBase {
  public:
   virtual std::size_t GetHash() const { return typeid(this).hash_code(); }
+  virtual ~CommandBase() = default;
 
  protected:
   virtual int Execute(void* const arg) = 0;

@@ -26,7 +26,7 @@ class AsynRoutine {
   virtual void Suspend() = 0;
 };
 
-class Coroutine : AsynRoutine {
+class Coroutine : public AsynRoutine {
  public:
   static stShareStack_t *share_stack;
   Coroutine(pfn_co_routine_t pfn, void *arg) {
