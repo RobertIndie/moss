@@ -56,25 +56,25 @@ class SendSide : public StreamSide, public CommandExecutor {
     explicit CmdWriteData(std::shared_ptr<std::stringstream> data)
         : data_(data) {}
 
-   protected:
+   private:
     std::shared_ptr<std::stringstream> data_;
-    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->WriteData(data_); }
+    int Call(SendSide* const sendSide) { sendSide->WriteData(data_); }
   };
   struct CmdEndStream : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
     CmdEndStream() {}
 
-   protected:
-    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->EndStream(); }
+   private:
+    int Call(SendSide* const sendSide) { sendSide->EndStream(); }
   };
   struct CmdResetStream : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
     CmdResetStream() {}
 
-   protected:
-    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->ResetStream(); }
+   private:
+    int Call(SendSide* const sendSide) { sendSide->ResetStream(); }
   };
   //                              O
   //                              +
@@ -130,7 +130,6 @@ class SendSide : public StreamSide, public CommandExecutor {
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
   unsigned int flow_credit_ = 1500;
-  // unsigned int mss_ = 512;
   std::stringstream send_buffer_;
   unsigned char signal_;
   inline std::streampos GetSendBufferLen() {
@@ -147,7 +146,7 @@ class SendSide : public StreamSide, public CommandExecutor {
   int OnResetRecvd();
 
   void ConsumeCmd();
-  void WriteData(std::shared_ptr<std::stringstream> gfl);
+  void WriteData(std::shared_ptr<std::stringstream> data);
   void EndStream();
   void ResetStream();
 
@@ -174,6 +173,12 @@ class Stream {
         direct_(direct),
         sendSide_(this),
         recvSide_(this) {}
+
+  // TODO(Multi-thread): just for test
+  void WriteData(const char* data, int data_len);
+  void EndStream();
+  void ResetStream();
+  // ====
 
 #ifdef __MOSS_TEST
 

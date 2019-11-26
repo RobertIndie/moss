@@ -39,9 +39,16 @@ class Connection : virtual public IConnection, public CommandExecutor {
 
 #pragma region IConnection
   void SendGFL(streamID_t stream_id, std::shared_ptr<GenericFrameLayout> gfl);
+  void SendData(streamID_t stream_id, std::stringstream* buffer, int data_len);
 #pragma endregion
 
+#ifdef __MOSS_TEST
+
+ public:
+#else
+
  private:
+#endif
   streamID_t nextIDPrefix_ = 0;
   ConnectionType type_;
   std::shared_ptr<AsynRoutine> routine_;

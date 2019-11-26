@@ -33,6 +33,8 @@ TEST(Frame, StreamFrameConvert) {
   EXPECT_EQ(recv_frame.id, frame.id);
   EXPECT_EQ(recv_frame.offset, frame.offset);
   EXPECT_EQ(recv_frame.length, frame.length);
+  EXPECT_EQ(
+      memcmp(recv_frame.stream_data, frame.stream_data, recv_frame.length), 0);
 }
 
 TEST(Frame, StreamFrameConvertWithoutData) {

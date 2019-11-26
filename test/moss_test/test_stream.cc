@@ -16,9 +16,17 @@
 #ifndef __MOSS_TEST
 #define __MOSS_TEST
 #endif
+#include "./connection.h"
 #include "./stream.h"
 #include "gtest/gtest.h"
+#include "./interfaces.h"
 
-TEST(Stream, StreamTest) {
-  
+TEST(Stream, SendSideSimpleSend) {
+  auto conn = std::make_shared<moss::Connection>(moss::ConnectionType::kClient);
+  auto stream = conn->CreateStream(moss::Directional::kUnidirectional);
+  char data[] = "Hello world!";
+  stream->WriteData(data, sizeof(data));
+  auto conn_cmd = conn->cmdQueue_->PopCmd();
+  auto send_data_cmd = std::dynamic_pointer_cast<moss::CmdSendData>(conn_cmd);
+  EXPECT_EQ(send_data_cmd->data_len_, sizeof(data));
 }

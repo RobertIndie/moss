@@ -41,4 +41,7 @@ void Connection::SendGFL(streamID_t stream_id,
   mapStreamGFL_[stream_id].push(gfl);
 }
 
+void Connection::SendData(streamID_t stream_id, std::stringstream* buffer,
+                          int data_len) {}
+
 }  // namespace moss

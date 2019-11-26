@@ -49,17 +49,20 @@ SendSide::SendSide(Stream* const stream) : stream_(stream) {
   cmdQueue_ = std::shared_ptr<CommandQueue<CmdSendSide>>(
       reinterpret_cast<CommandQueue<CmdSendSide>*>(
           new CoCmdQueue<CmdSendSide>(routine_)));
-  routine_->Resume();  // Create Stream (Sending)
+  routine_->Resume();  // Init
 }
 
 void SendSide::SendData() {
-  // TODO(connection): send data
+  auto cmd = std::make_shared<CmdSendData>(stream_->id_, &send_buffer_,
+                                           GetSendBufferLen());
+  stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
 
 void SendSide::SendDataBlocked(std::streampos data_limit) {
-  // TODO(gfl-fraeme): use frame conversion
-  std::shared_ptr<GenericFrameLayout> gfl(new GenericFrameLayout);
-  gfl->frame_type = FrameType::kStreamDataBlocked;
+  auto gfl = std::make_shared<GenericFrameLayout>();
+  auto frame = std::make_shared<FrameStreamDataBlocked>();
+  frame->stream_data_limit = data_limit;
+  frame->stream_id = stream_->id_;
   std::shared_ptr<CmdSendGFL> cmd(new CmdSendGFL(stream_->id_, gfl));
   stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
@@ -71,10 +74,24 @@ int SendSide::OnSend() {
   if (GetSendBufferLen() > 0) {
     SendData();
   }
+  if (CheckSignal(signal_, SignalMask::kBitEndStream)) {
+    ClearSignal(signal_, SignalMask::kBitEndStream);
+    fsm_.Trigger(TriggerType::kSendFIN);
+  }
+  if (CheckSignal(signal_, SignalMask::kBitResetStream)) {
+    ClearSignal(signal_, SignalMask::kBitResetStream);
+    fsm_.Trigger(TriggerType::kResetStream);
+  }
   return 0;
 }
 
-int SendSide::OnDataSent() { return 0; }
+int SendSide::OnDataSent() {
+  if (CheckSignal(signal_, SignalMask::kBitResetStream)) {
+    ClearSignal(signal_, SignalMask::kBitResetStream);
+    fsm_.Trigger(TriggerType::kResetStream);
+  }
+  return 0;
+}
 
 int SendSide::OnResetSent() { return 0; }
 
@@ -92,6 +109,23 @@ void SendSide::EndStream() { AddSignal(signal_, SignalMask::kBitEndStream); }
 
 void SendSide::ResetStream() {
   AddSignal(signal_, SignalMask::kBitResetStream);
+}
+
+void Stream::WriteData(const char* data, int data_len) {
+  auto data_ss = std::make_shared<std::stringstream>();
+  data_ss->write(data, data_len);
+  sendSide_.PushCommand(std::dynamic_pointer_cast<CommandBase>(
+      std::make_shared<SendSide::CmdWriteData>(data_ss)));
+}
+
+void Stream::EndStream() {
+  sendSide_.PushCommand(std::dynamic_pointer_cast<CommandBase>(
+      std::make_shared<SendSide::CmdEndStream>()));
+}
+
+void Stream::ResetStream() {
+  sendSide_.PushCommand(std::dynamic_pointer_cast<CommandBase>(
+      std::make_shared<SendSide::CmdResetStream>()));
 }
 
 }  // namespace moss
