@@ -17,16 +17,28 @@
 #define __MOSS_TEST
 #endif
 #include "./connection.h"
+#include "./interfaces.h"
 #include "./stream.h"
 #include "gtest/gtest.h"
-#include "./interfaces.h"
 
 TEST(Stream, SendSideSimpleSend) {
   auto conn = std::make_shared<moss::Connection>(moss::ConnectionType::kClient);
   auto stream = conn->CreateStream(moss::Directional::kUnidirectional);
   char data[] = "Hello world!";
+  // Set flow credit
+  stream->sendSide_.flow_credit_ = sizeof(data);
+  // Test write data
   stream->WriteData(data, sizeof(data));
-  auto conn_cmd = conn->cmdQueue_->PopCmd();
-  auto send_data_cmd = std::dynamic_pointer_cast<moss::CmdSendData>(conn_cmd);
+  auto send_data_cmd =
+      std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
   EXPECT_EQ(send_data_cmd->data_len_, sizeof(data));
+  std::shared_ptr<char> result_data(new char[sizeof(data)]);
+  send_data_cmd->buffer_->read(result_data.get(), sizeof(data));
+  EXPECT_EQ(memcmp(data, result_data.get(), sizeof(data)), 0);
+  // Test stream flow control -- data block
+  // stream->WriteData(data, sizeof(data));
+  // auto blocked_cmd =
+  //     std::dynamic_pointer_cast<moss::CmdSendGFL>(conn->cmdQueue_->PopCmd());
+  // EXPECT_EQ(blocked_cmd->gfl_->frame_type, FrameType::kStreamDataBlocked);
+  // auto frame = std::make_shared<FrameStreamDataBlocked>();
 }

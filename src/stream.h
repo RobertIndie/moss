@@ -116,7 +116,7 @@ class SendSide : public StreamSide, public CommandExecutor {
   void PushCommand(std::shared_ptr<CommandBase> cmd) {
     cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdSendSide>(cmd));
   }
-#ifdef __MOST_TEST
+#ifdef __MOSS_TEST
 
  public:
 #else
