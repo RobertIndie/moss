@@ -57,7 +57,7 @@ class Connection : virtual public IConnection, public CommandExecutor {
   std::map<streamID_t, std::shared_ptr<Stream>> mapStreams_;
   std::map<streamID_t, std::queue<std::shared_ptr<GenericFrameLayout>>>
       mapStreamGFL_;
-  
+
   friend void* CoConnection(void* arg);
 
 #ifdef __MOSS_TEST

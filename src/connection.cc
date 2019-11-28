@@ -48,7 +48,7 @@ std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
 
 void Connection::PushCommand(std::shared_ptr<CommandBase> cmd) {
   auto _cmd = std::static_pointer_cast<CmdConnection>(cmd);
-  cmdQueue_->PushCmd(std::static_pointer_cast<CmdConnection>(cmd));
+  cmdQueue_->PushCmdAndResume(std::static_pointer_cast<CmdConnection>(cmd));
 }
 
 void Connection::SendGFL(streamID_t stream_id,

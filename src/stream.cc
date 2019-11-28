@@ -52,9 +52,9 @@ SendSide::SendSide(Stream* const stream) : stream_(stream) {
   routine_->Resume();  // Init
 }
 
-void SendSide::SendData() {
+void SendSide::SendData(int data_pos, bool final) {
   auto cmd = std::make_shared<CmdSendData>(stream_->id_, &send_buffer_,
-                                           GetSendBufferLen());
+                                           data_pos, final);
   stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
 
@@ -69,11 +69,13 @@ void SendSide::SendDataBlocked(std::streampos data_limit) {
 }
 
 int SendSide::OnSend() {
-  if (flow_credit_ <= send_buffer_.tellg()) {
+  // TODO(BufferStream): Define a buffer stream class
+  auto end_pos = send_buffer_.tellp();
+  if (end_pos - 1 >= flow_credit_) {
+    SendData(flow_credit_, CheckSignal(signal_, SignalMask::kBitEndStream));
     SendDataBlocked(flow_credit_);
-  }
-  if (GetSendBufferLen() > 0) {
-    SendData();
+  } else {
+    SendData(end_pos, CheckSignal(signal_, SignalMask::kBitEndStream));
   }
   if (CheckSignal(signal_, SignalMask::kBitEndStream)) {
     ClearSignal(signal_, SignalMask::kBitEndStream);
@@ -102,8 +104,10 @@ int SendSide::OnResetRecvd() { return 0; }
 
 void SendSide::ConsumeCmd() { auto cmd = cmdQueue_->WaitAndExecuteCmds(this); }
 
-void SendSide::WriteData(std::shared_ptr<std::stringstream> data) {
+void SendSide::WriteData(std::shared_ptr<std::stringstream> data,
+                         bool is_final) {
   send_buffer_ << data->str();
+  if (is_final) AddSignal(signal_, SignalMask::kBitEndStream);
 }
 
 void SendSide::EndStream() { AddSignal(signal_, SignalMask::kBitEndStream); }
@@ -112,11 +116,11 @@ void SendSide::ResetStream() {
   AddSignal(signal_, SignalMask::kBitResetStream);
 }
 
-void Stream::WriteData(const char* data, int data_len) {
+void Stream::WriteData(const char* data, int data_len, bool is_final) {
   auto data_ss = std::make_shared<std::stringstream>();
   data_ss->write(data, data_len);
   sendSide_.PushCommand(std::dynamic_pointer_cast<CommandBase>(
-      std::make_shared<SendSide::CmdWriteData>(data_ss)));
+      std::make_shared<SendSide::CmdWriteData>(data_ss, is_final)));
 }
 
 void Stream::EndStream() {

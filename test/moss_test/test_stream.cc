@@ -16,14 +16,30 @@
 #ifndef __MOSS_TEST
 #define __MOSS_TEST
 #endif
-#include "./connection.h"
+#include "./command.h"
 #include "./interfaces.h"
 #include "./stream.h"
 #include "gtest/gtest.h"
 
+class TestConnection : public moss::CommandExecutor {
+ public:
+  TestConnection() {
+    cmdQueue_ =
+        std::static_pointer_cast<moss::CommandQueue<moss::CmdConnection>>(
+            std::make_shared<moss::CoCmdQueue<moss::CmdConnection>>());
+  }
+  std::shared_ptr<moss::CommandQueue<moss::CmdConnection>> cmdQueue_;
+  void PushCommand(std::shared_ptr<moss::CommandBase> cmd) {
+    auto _cmd = std::static_pointer_cast<moss::CmdConnection>(cmd);
+    cmdQueue_->PushCmd(std::static_pointer_cast<moss::CmdConnection>(cmd));
+  }
+};
+
 TEST(Stream, SendSideSimpleSend) {
-  auto conn = std::make_shared<moss::Connection>(moss::ConnectionType::kClient);
-  auto stream = conn->CreateStream(moss::Directional::kUnidirectional);
+  auto conn = std::make_shared<TestConnection>();
+  auto stream = std::make_shared<moss::Stream>(
+      conn.get(), 12345, moss::Initializer::kClient,
+      moss::Directional::kUnidirectional);
   char data[] = "Hello world!";
   // Set flow credit
   stream->sendSide_.flow_credit_ = sizeof(data);
@@ -31,16 +47,29 @@ TEST(Stream, SendSideSimpleSend) {
   stream->WriteData(data, sizeof(data));
   auto send_data_cmd =
       std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
-  EXPECT_EQ(send_data_cmd->data_len_, sizeof(data));
+  EXPECT_EQ(send_data_cmd->data_pos_, sizeof(data));
   std::shared_ptr<char> result_data(new char[sizeof(data)]);
   send_data_cmd->buffer_->read(result_data.get(), sizeof(data));
   EXPECT_EQ(memcmp(data, result_data.get(), sizeof(data)), 0);
   // Test stream flow control -- data block
   stream->WriteData(data, sizeof(data));
-  // auto blocked_cmd =
-  //     std::dynamic_pointer_cast<moss::CmdSendGFL>(conn->cmdQueue_->PopCmd());
-  // auto frame = std::make_shared<FrameStreamDataBlocked>();
-  // FrameType frame_type;
-  // ConvertGFLToFrame(blocked_cmd->gfl_.get(), frame.get(), &frame_type);
-  // EXPECT_EQ(frame_type, FrameType::kStreamDataBlocked);
+  auto data_cmd =
+      std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
+  EXPECT_NE(data_cmd.get(), nullptr);
+  auto blocked_cmd =
+      std::dynamic_pointer_cast<moss::CmdSendGFL>(conn->cmdQueue_->PopCmd());
+  EXPECT_NE(blocked_cmd.get(), nullptr);
+  auto frame = std::make_shared<FrameStreamDataBlocked>();
+  FrameType frame_type;
+  ConvertGFLToFrame(blocked_cmd->gfl_.get(), frame.get(), &frame_type);
+  EXPECT_EQ(frame_type, FrameType::kStreamDataBlocked);
+  EXPECT_EQ(frame->stream_data_limit, sizeof(data));
+  EXPECT_EQ(frame->stream_id, stream->id_);
+  // Test final stream
+  stream->sendSide_.flow_credit_ += 2 * sizeof(data);  // add flow credit
+  stream->WriteData(data, sizeof(data), true);
+  auto send_final_data_cmd =
+      std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
+  EXPECT_EQ(send_final_data_cmd->data_pos_, 3 * sizeof(data));
+  EXPECT_EQ(send_final_data_cmd->is_final_, true);
 }

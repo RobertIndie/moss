@@ -62,15 +62,21 @@ struct CmdSendGFL : public CmdConnection {
 struct CmdSendData : public CmdConnection {
  public:
   std::size_t GetHash() const { return typeid(this).hash_code(); }
-  CmdSendData(streamID_t stream_id, std::stringstream* buffer, int data_len)
-      : stream_id_(stream_id), buffer_(buffer), data_len_(data_len) {}
+  CmdSendData(streamID_t stream_id, std::stringstream* buffer, int data_pos,
+              bool is_final)
+      : stream_id_(stream_id),
+        buffer_(buffer),
+        data_pos_(data_pos),
+        is_final_(is_final) {}
   streamID_t stream_id_;
   std::stringstream* buffer_;
-  int data_len_;
+  int data_pos_;
+  bool is_final_;
   int Call(IConnection* const connection) {
-    connection->SendData(stream_id_, buffer_, data_len_);
+    connection->SendData(stream_id_, buffer_, data_pos_);
   }
 };
+
 #pragma endregion
 
 }  // namespace moss
