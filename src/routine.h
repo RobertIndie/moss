@@ -39,7 +39,8 @@ class Coroutine : public AsynRoutine {
     attr.share_stack = &*share_stack;
     co_create(&co_, &attr, pfn, arg);
   }
-  void Resume() { co_resume(co_); }
+  void Resume() {
+     co_resume(co_); }
   void Suspend() { co_yield_ct(); }
   ~Coroutine() { co_release(co_); }
 

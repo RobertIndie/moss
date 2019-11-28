@@ -23,7 +23,7 @@ void* CoSendSide(void* arg) {
   auto sendside = reinterpret_cast<SendSide*>(arg);
   while (true) {
     sendside->ConsumeCmd();
-    if (sendside->fsm_.Run() != -1) break;
+    if (sendside->fsm_.Run() == -1) break;
   }
 }
 

@@ -19,7 +19,12 @@
 
 namespace moss {
 
-void* CoConnection(void* arg) {}
+void* CoConnection(void* arg) {
+  auto conn = reinterpret_cast<Connection*>(arg);
+  while (true) {
+    // TODO(Connection) : co func
+  }
+}
 
 Connection::Connection(const ConnectionType& type) : type_(type) {
   routine_ = std::static_pointer_cast<AsynRoutine>(

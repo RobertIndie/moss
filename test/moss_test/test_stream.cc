@@ -36,9 +36,11 @@ TEST(Stream, SendSideSimpleSend) {
   send_data_cmd->buffer_->read(result_data.get(), sizeof(data));
   EXPECT_EQ(memcmp(data, result_data.get(), sizeof(data)), 0);
   // Test stream flow control -- data block
-  // stream->WriteData(data, sizeof(data));
+  stream->WriteData(data, sizeof(data));
   // auto blocked_cmd =
   //     std::dynamic_pointer_cast<moss::CmdSendGFL>(conn->cmdQueue_->PopCmd());
-  // EXPECT_EQ(blocked_cmd->gfl_->frame_type, FrameType::kStreamDataBlocked);
   // auto frame = std::make_shared<FrameStreamDataBlocked>();
+  // FrameType frame_type;
+  // ConvertGFLToFrame(blocked_cmd->gfl_.get(), frame.get(), &frame_type);
+  // EXPECT_EQ(frame_type, FrameType::kStreamDataBlocked);
 }
