@@ -38,19 +38,21 @@ int FSToGFL(const FrameStream *const fs, GenericFrameLayout *gfl) {
   id_len = GetLenAndSetFlag(&copy_id);
   if (fs->bits & StreamFlags::OFF) {
     copy_offset = fs->offset;
-    off_len = GetLenAndSetFlag(&(copy_offset));
+    off_len = GetLenAndSetFlag(&copy_offset);
   }
   if (fs->bits & StreamFlags::LEN) {
     copy_len = dat_len = fs->length;
     len_len = GetLenAndSetFlag(&copy_len);
   }
-  total_len = id_len + off_len + len_len + dat_len + 1;
+  //  change
+  total_len = id_len + off_len + len_len + dat_len;
   char *total_data = new char[total_len]{0};
   if (total_data == nullptr) return -1;
-  gfl->frame_type = Type::FS;
+  //  gfl->frame_type_bits = Type::FS;
+  gfl->frame_type_bits = fs->bits;
   gfl->data_len = total_len;
   int pos = 0;
-  WriteVintToBin(fs->bits, total_data, 1, &pos);
+  //  WriteVintToBin(fs->bits, total_data, 1, &pos);
   WriteVintToBin(copy_id, total_data, id_len, &pos);
   if (off_len) WriteVintToBin(copy_offset, total_data, off_len, &pos);
   if (len_len) {
@@ -71,7 +73,7 @@ int FSDBToGFL(const FrameStreamDataBlocked *const fsdb,
   char *total_data = new char[total_len]{0};
   if (total_data == nullptr) return -1;
   gfl->data_len = total_len;
-  gfl->frame_type = Type::FSDB;
+  gfl->frame_type_bits = Type::FSDB;
   int pos = 0;
   WriteVintToBin(copy_id, total_data, id_len, &pos);
   WriteVintToBin(copy_stream_data_limit, total_data, sdl_len, &pos);
@@ -89,7 +91,7 @@ int FRSToGFL(const FrameResetStream *const fs, GenericFrameLayout *gfl) {
   int total_len = id_len + ec_len + fz_len;
   char *total_data = new char[total_len]{0};
   if (total_data == nullptr) return -1;
-  gfl->frame_type = Type::FRS;
+  gfl->frame_type_bits = Type::FRS;
   gfl->data_len = total_len;
   int pos = 0;
   WriteVintToBin(copy_id, total_data, id_len, &pos);
@@ -212,7 +214,7 @@ int GFLToFSDB(const GenericFrameLayout *const gfl,
   return 0;
 }
 int GFLToFS(const GenericFrameLayout *const gfl, FrameStream *frame) {
-  int location = 1;  // 数据开始的位置
+  int location = 0;  // 数据开始的位置  // change
   frame->stream_data = nullptr;
   // 若没有数据存放的时候不设置为Nullptr那在程序结束的时候会释放一个无效指针
   auto readF = [&](vint *dest_data) mutable {
@@ -227,7 +229,8 @@ int GFLToFS(const GenericFrameLayout *const gfl, FrameStream *frame) {
     RemoveFlags(dest_data, tmpFlag);
   };
   readF(&(frame->id = 0));
-  frame->bits = *(gfl->data + 0);
+  //  frame->bits = *(gfl->data + 0);
+  frame->bits = gfl->frame_type_bits;
   if (frame->bits & StreamFlags::OFF) {
     readF(&(frame->offset = 0));
   }
@@ -242,7 +245,7 @@ int GFLToFS(const GenericFrameLayout *const gfl, FrameStream *frame) {
 }
 int ConvertGFLToFrame(const GenericFrameLayout *const gfl, void *frame,
                       FrameType *frameType) {
-  switch (gfl->frame_type) {
+  switch (gfl->frame_type_bits) {
     case Type::FRS:
       *frameType = FrameType::kResetStream;
       return GFLToFRS(gfl, reinterpret_cast<FrameResetStream *>(frame));
