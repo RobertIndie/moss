@@ -46,12 +46,11 @@ TEST(Frame, StreamFrameConvertWithoutData) {
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
   EXPECT_EQ(gfl.frame_type_bits, 0x04);
   char gfl_data[] = {
-      0x04,                                           // bits
       0xbf, 0xff, 0xff, 0xff,                         // Stream ID
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff  // Offset
   };
-  EXPECT_EQ(gfl.data_len, 13);
-  EXPECT_EQ(memcmp(gfl.data, gfl_data, 13), 0);
+  EXPECT_EQ(gfl.data_len, 12);
+  EXPECT_EQ(memcmp(gfl.data, gfl_data, 12), 0);
   //  test convert bin to frame;
   FrameStream recv_frame;
   FrameType TypeFrame;
@@ -108,4 +107,3 @@ TEST(Frame, ResetStreamFrameConvert) {
   EXPECT_EQ(recv_frame.error_code, 12345);
   EXPECT_EQ(recv_frame.final_size, 12345);
 }
-
