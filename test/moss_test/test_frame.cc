@@ -14,7 +14,7 @@ TEST(Frame, StreamFrameConvert) {
   frame.stream_data = new char[5]{0x01, 0x02, 0x03, 0x04, 0x05};
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type_bits, 0x07);
+  EXPECT_EQ(gfl.frame_type_bits, 0x07 | 0x08);
   char gfl_data[] = {
       0x00,                         // Stream ID
       0x40, 0x40,                   // Offset
@@ -29,7 +29,7 @@ TEST(Frame, StreamFrameConvert) {
   ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
   EXPECT_EQ(TypeFrame, FrameType::kStream);
 
-  EXPECT_EQ(recv_frame.bits, 0x07);
+  EXPECT_EQ(recv_frame.bits, 0x07 | 0x08);
   EXPECT_EQ(recv_frame.id, 0);
   EXPECT_EQ(recv_frame.length, 5);
   EXPECT_EQ(recv_frame.offset, 64);
@@ -44,7 +44,7 @@ TEST(Frame, StreamFrameConvertWithoutData) {
                                   0x05};  // test: do not contain data in gfl
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStream, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type_bits, 0x04);
+  EXPECT_EQ(gfl.frame_type_bits, 0x04 | 0x08);
   char gfl_data[] = {
       0xbf, 0xff, 0xff, 0xff,                         // Stream ID
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff  // Offset
@@ -56,7 +56,7 @@ TEST(Frame, StreamFrameConvertWithoutData) {
   FrameType TypeFrame;
   ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
   EXPECT_EQ(TypeFrame, FrameType::kStream);
-  EXPECT_EQ(recv_frame.bits, 0x04);
+  EXPECT_EQ(recv_frame.bits, 0x04 | 0x08);
   EXPECT_EQ(recv_frame.id, 1073741823);
   EXPECT_EQ(recv_frame.offset, 4611686018427387903);
 }
@@ -67,7 +67,7 @@ TEST(Frame, StreamDataBlockedFrameConvert) {
   frame.stream_data_limit = 0;
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kStreamDataBlocked, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type_bits, FrameType::kStreamDataBlocked);
+  EXPECT_EQ(gfl.frame_type_bits, 0x15);
   char gfl_data[] = {
       0x70, 0x39,  // Stream ID
       0x00         // Stream Data Limit
@@ -90,7 +90,7 @@ TEST(Frame, ResetStreamFrameConvert) {
   frame.final_size = 12345;
   GenericFrameLayout gfl;
   EXPECT_EQ(ConvertFrameToGFL(&frame, FrameType::kResetStream, &gfl), 0);
-  EXPECT_EQ(gfl.frame_type_bits, FrameType::kResetStream);
+  EXPECT_EQ(gfl.frame_type_bits,0x04);
   char gfl_data[] = {
       0x70, 0x39,  // Stream ID
       0x70, 0x39,  // Application Error Code

@@ -16,9 +16,9 @@
 #include "./frame.h"
 using uint = unsigned int;
 enum Type {
-  FRS = FrameType::kResetStream,
-  FSDB = FrameType::kStreamDataBlocked,
-  FS = FrameType::kStream
+  FRS = 0x04,
+  FSDB = 0x15,
+  FS = 0x00
 };
 // 长度信息标志
 enum Flags { OEB = 0x00, TWB = 0x01, FOB = 0x02, EIB = 0x03, NON = 0xff };
@@ -49,7 +49,7 @@ int FSToGFL(const FrameStream *const fs, GenericFrameLayout *gfl) {
   char *total_data = new char[total_len]{0};
   if (total_data == nullptr) return -1;
   //  gfl->frame_type_bits = Type::FS;
-  gfl->frame_type_bits = fs->bits;
+  gfl->frame_type_bits = fs->bits | 0x08;
   gfl->data_len = total_len;
   int pos = 0;
   //  WriteVintToBin(fs->bits, total_data, 1, &pos);
@@ -245,7 +245,8 @@ int GFLToFS(const GenericFrameLayout *const gfl, FrameStream *frame) {
 }
 int ConvertGFLToFrame(const GenericFrameLayout *const gfl, void *frame,
                       FrameType *frameType) {
-  switch (gfl->frame_type_bits) {
+  const int frame_type = gfl->frame_type_bits;
+  switch (frame_type) {
     case Type::FRS:
       *frameType = FrameType::kResetStream;
       return GFLToFRS(gfl, reinterpret_cast<FrameResetStream *>(frame));
@@ -253,7 +254,11 @@ int ConvertGFLToFrame(const GenericFrameLayout *const gfl, void *frame,
       *frameType = FrameType::kStreamDataBlocked;
       return GFLToFSDB(gfl, reinterpret_cast<FrameStreamDataBlocked *>(frame));
     default:
+    if (frame_type >= 0x08 && frame_type <= 0x0f) {
       *frameType = FrameType::kStream;
       return GFLToFS(gfl, reinterpret_cast<FrameStream *>(frame));
+    } else {
+      return -1;
+    }
   }
 }
