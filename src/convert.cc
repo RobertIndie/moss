@@ -254,7 +254,7 @@ int ConvertGFLToFrame(const GenericFrameLayout *const gfl, void *frame,
       *frameType = FrameType::kStreamDataBlocked;
       return GFLToFSDB(gfl, reinterpret_cast<FrameStreamDataBlocked *>(frame));
     default:
-    if (gfl->frame_type_bits >= 0x08 && gfl->frame_type_bits <= 0x0f) {
+    if (frame_type >= 0x08 && frame_type <= 0x0f) {
       *frameType = FrameType::kStream;
       return GFLToFS(gfl, reinterpret_cast<FrameStream *>(frame));
     } else {
