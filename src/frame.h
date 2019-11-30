@@ -20,7 +20,7 @@ enum FrameType { kStream = 0, kStreamDataBlocked, kResetStream };
 // |                   Type-Dependent Fields (*)                 ...
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 struct GenericFrameLayout {
-  vint frame_type;
+  vint frame_type_bits;
   char* data;
   size_t data_len;
   ~GenericFrameLayout() {
