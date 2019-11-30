@@ -59,7 +59,7 @@ void SendSide::SendData() {
 void SendSide::SendDataBlocked(std::streampos data_limit) {
   // TODO(gfl-fraeme): use frame conversion
   std::shared_ptr<GenericFrameLayout> gfl(new GenericFrameLayout);
-  gfl->frame_type = FrameType::kStreamDataBlocked;
+  gfl->frame_type_bits = FrameType::kStreamDataBlocked;
   std::shared_ptr<CmdSendGFL> cmd(new CmdSendGFL(stream_->id_, gfl));
   stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
