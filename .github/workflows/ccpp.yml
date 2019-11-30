@@ -1,0 +1,19 @@
+name: Build CI
+
+on: 
+  push:
+    branches:
+    - master
+    - dev
+  schedule:
+  - cron: 0 2 * * 1-5
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: make
+      run: make
