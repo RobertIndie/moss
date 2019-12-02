@@ -31,9 +31,10 @@ namespace moss {
 struct CommandBase {
  public:
   virtual std::size_t GetHash() const { return typeid(this).hash_code(); }
+  virtual ~CommandBase() = default;
 
  protected:
-  virtual int Execute(void*const arg) = 0;
+  virtual int Execute(void* const arg) = 0;
   template <typename CmdType>
   friend class CommandQueue;
 };
@@ -44,33 +45,55 @@ class CommandQueue {
                 "class CmdType must inherit from class CommandBase");
 
  public:
+  virtual void PushCmdAndResume(std::shared_ptr<CmdType> cmd) = 0;
   virtual void PushCmd(std::shared_ptr<CmdType> cmd) = 0;
+  virtual std::shared_ptr<CmdType> PopCmd() = 0;
   virtual std::shared_ptr<CmdType> WaitCmd() = 0;
-  virtual int WaitAndExecuteCmds(void*const arg) = 0;
+  virtual int WaitAndExecuteCmds(void* const arg) = 0;
 };
 
 template <typename CmdType>
 class CoCmdQueue : public CommandQueue<CmdType> {
  public:
+  CoCmdQueue() {}
   explicit CoCmdQueue(std::shared_ptr<AsynRoutine> co) : co_(co) {}
+  void SetCo(std::shared_ptr<AsynRoutine> co) { co_ = co; }
+  void PushCmdAndResume(std::shared_ptr<CmdType> command) {
+    PushCmd(command);
+    if (co_.get())
+      co_->Resume();
+    else
+      LOG(FATAL) << "co_ is null, cannot resume co_";
+  }
   void PushCmd(std::shared_ptr<CmdType> command) {
     command_queue_.push(command);
-    co_->Resume();
+  }
+  std::shared_ptr<CmdType> PopCmd() {
+    auto cmd = command_queue_.front();
+    command_queue_.pop();
+    return cmd;
   }
   std::shared_ptr<CmdType> WaitCmd() {
     while (command_queue_.size() == 0) {
-      co_->Suspend();
+      if (co_.get())
+        co_->Suspend();
+      else
+        LOG(FATAL) << "co_ is null, cannot suspend co_";
     }
     auto cmd = command_queue_.front();
     command_queue_.pop();
     return cmd;
   }
-  int WaitAndExecuteCmds(void*const arg) {
-    co_->Suspend();
+  int WaitAndExecuteCmds(void* const arg) {
+    if (co_.get())
+      co_->Suspend();
+    else
+      LOG(FATAL) << "co_ is null, cannot suspend co_";
     if (command_queue_.size() == 0) return 0;  // The timer is up
     int cmd_count = command_queue_.size();
     for (int i = 0; i < cmd_count; ++i) {
       auto cmd = command_queue_.front();
+      command_queue_.pop();
       cmd->Execute(arg);
     }
     return cmd_count;

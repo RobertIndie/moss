@@ -17,7 +17,7 @@
 #include "fsm/fsm.h"
 #include "gtest/gtest.h"
 
-/* TEST(FSM, FSMTest) {
+TEST(FSM, FSMTest) {
   FSM machine(1);
   int status = 0;
   machine.When(1, FSM::transition_t(1, 2));
@@ -46,4 +46,3 @@
   EXPECT_EQ(status, 3);
   EXPECT_EQ(machine.GetState(), 1);
 }
- */

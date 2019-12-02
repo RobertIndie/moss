@@ -26,10 +26,12 @@ class AsynRoutine {
   virtual void Suspend() = 0;
 };
 
-class Coroutine : AsynRoutine {
+class Coroutine : public AsynRoutine {
  public:
   static stShareStack_t *share_stack;
-  Coroutine(pfn_co_routine_t pfn, void *arg) {
+  Coroutine() {}
+  Coroutine(pfn_co_routine_t pfn, void *arg) { Init(pfn, arg); }
+  void Init(pfn_co_routine_t pfn, void *arg) {
     if (share_stack == nullptr)
       share_stack = co_alloc_sharestack(1, 1024 * 128);
     stCoRoutineAttr_t attr;
@@ -37,7 +39,8 @@ class Coroutine : AsynRoutine {
     attr.share_stack = &*share_stack;
     co_create(&co_, &attr, pfn, arg);
   }
-  void Resume() { co_resume(co_); }
+  void Resume() {
+     co_resume(co_); }
   void Suspend() { co_yield_ct(); }
   ~Coroutine() { co_release(co_); }
 

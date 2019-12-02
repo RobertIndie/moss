@@ -19,6 +19,20 @@
 
 namespace moss {
 
+void* CoConnection(void* arg) {
+  auto conn = reinterpret_cast<Connection*>(arg);
+  while (true) {
+    // TODO(Connection) : co func
+  }
+}
+
+Connection::Connection(const ConnectionType& type) : type_(type) {
+  routine_ = std::static_pointer_cast<AsynRoutine>(
+      std::make_shared<Coroutine>(CoConnection, this));
+  cmdQueue_ = std::static_pointer_cast<CommandQueue<CmdConnection>>(
+      std::make_shared<CoCmdQueue<CmdConnection>>(routine_));
+}
+
 streamID_t Connection::NewID(const Initializer& initer,
                              const Directional& direct) {
   return ((nextIDPrefix_++) << 2) + (direct << 1) + initer;
@@ -29,18 +43,20 @@ std::shared_ptr<Stream> moss::Connection::CreateStream(Directional direct) {
   std::shared_ptr<Stream> stream =
       std::make_shared<Stream>(this, id, type_, direct);
   mapStreams_[id] = stream;
-  PLOG(INFO) << "[Connection]Create Stream: " << LOG_VALUE(id)
-             << LOG_VALUE(type_) << LOG_VALUE(direct);
   return stream;
 }
 
 void Connection::PushCommand(std::shared_ptr<CommandBase> cmd) {
-  cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdConnection>(cmd));
+  auto _cmd = std::static_pointer_cast<CmdConnection>(cmd);
+  cmdQueue_->PushCmdAndResume(std::static_pointer_cast<CmdConnection>(cmd));
 }
 
 void Connection::SendGFL(streamID_t stream_id,
                          std::shared_ptr<GenericFrameLayout> gfl) {
   mapStreamGFL_[stream_id].push(gfl);
 }
+
+void Connection::SendData(streamID_t stream_id, std::stringstream* buffer,
+                          int data_len) {}
 
 }  // namespace moss

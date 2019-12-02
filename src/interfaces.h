@@ -18,6 +18,7 @@
 #define INTERFACES_H_
 
 #include <memory>
+#include <sstream>
 #include "./frame.h"
 
 namespace moss {
@@ -31,17 +32,19 @@ class IConnection {
  public:
   virtual void SendGFL(streamID_t stream_id,
                        std::shared_ptr<GenericFrameLayout> gfl) = 0;
+  virtual void SendData(streamID_t stream_id, std::stringstream* buffer,
+                        int data_len) = 0;
 };
 
 #pragma region Commands
 struct CmdConnection : public CommandBase {
-  int Execute(void*const arg) {
-    auto connection = static_cast<IConnection*const>(arg);
+  int Execute(void* const arg) {
+    auto connection = static_cast<IConnection* const>(arg);
     return Call(connection);
   }
 
  protected:
-  virtual int Call(IConnection*const connection) = 0;
+  virtual int Call(IConnection* const connection) = 0;
 };
 
 struct CmdSendGFL : public CmdConnection {
@@ -51,10 +54,29 @@ struct CmdSendGFL : public CmdConnection {
       : stream_id_(stream_id), gfl_(gfl) {}
   streamID_t stream_id_;
   std::shared_ptr<GenericFrameLayout> gfl_;
-  int Call(IConnection*const connection) {
+  int Call(IConnection* const connection) {
     connection->SendGFL(stream_id_, gfl_);
   }
 };
+
+struct CmdSendData : public CmdConnection {
+ public:
+  std::size_t GetHash() const { return typeid(this).hash_code(); }
+  CmdSendData(streamID_t stream_id, std::stringstream* buffer, int data_pos,
+              bool is_final)
+      : stream_id_(stream_id),
+        buffer_(buffer),
+        data_pos_(data_pos),
+        is_final_(is_final) {}
+  streamID_t stream_id_;
+  std::stringstream* buffer_;
+  int data_pos_;
+  bool is_final_;
+  int Call(IConnection* const connection) {
+    connection->SendData(stream_id_, buffer_, data_pos_);
+  }
+};
+
 #pragma endregion
 
 }  // namespace moss

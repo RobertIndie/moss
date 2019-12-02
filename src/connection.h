@@ -30,7 +30,7 @@ namespace moss {
 
 class Connection : virtual public IConnection, public CommandExecutor {
  public:
-  explicit Connection(const ConnectionType& type) : type_(type) {}
+  explicit Connection(const ConnectionType& type);
   std::shared_ptr<Stream> CreateStream(Directional direct);
 
 #pragma region CommandExecutor
@@ -39,9 +39,16 @@ class Connection : virtual public IConnection, public CommandExecutor {
 
 #pragma region IConnection
   void SendGFL(streamID_t stream_id, std::shared_ptr<GenericFrameLayout> gfl);
+  void SendData(streamID_t stream_id, std::stringstream* buffer, int data_len);
 #pragma endregion
 
+#ifdef __MOSS_TEST
+
+ public:
+#else
+
  private:
+#endif
   streamID_t nextIDPrefix_ = 0;
   ConnectionType type_;
   std::shared_ptr<AsynRoutine> routine_;
@@ -50,6 +57,8 @@ class Connection : virtual public IConnection, public CommandExecutor {
   std::map<streamID_t, std::shared_ptr<Stream>> mapStreams_;
   std::map<streamID_t, std::queue<std::shared_ptr<GenericFrameLayout>>>
       mapStreamGFL_;
+
+  friend void* CoConnection(void* arg);
 
 #ifdef __MOSS_TEST
   friend streamID_t __Test_NewID(std::shared_ptr<Connection> _this,

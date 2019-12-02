@@ -65,7 +65,7 @@ inline unsigned int BKDRHash(const char *str) {
 }
 
 #define AddSignal(signal, mask) (signal |= 1 << mask)
-#define CheckSignal(signal, mask) (signal & mask != 0)
+#define CheckSignal(signal, mask) ((signal & 1 << mask) != 0)
 #define ClearSignal(signal, mask) (signal &= ~mask)
 
 #endif  // UTIL_UTIL_H_

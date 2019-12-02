@@ -76,11 +76,11 @@ TEST(Frame, StreamDataBlockedFrameConvert) {
   EXPECT_EQ(memcmp(gfl.data, gfl_data, 3), 0);
   //  test convert bin to frame;
   FrameStreamDataBlocked recv_frame;
-  FrameType TypeFrame;
-  ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
-  EXPECT_EQ(TypeFrame, FrameType::kStreamDataBlocked);
-  EXPECT_EQ(recv_frame.stream_id, 12345);
-  EXPECT_EQ(recv_frame.stream_data_limit, 0);
+  FrameType frame_type;
+  ConvertGFLToFrame(&gfl, &recv_frame, &frame_type);
+  EXPECT_EQ(frame_type, FrameType::kStreamDataBlocked);
+  EXPECT_EQ(recv_frame.stream_id, frame.stream_id);
+  EXPECT_EQ(recv_frame.stream_data_limit, frame.stream_data_limit);
 }
 
 TEST(Frame, ResetStreamFrameConvert) {
@@ -100,10 +100,10 @@ TEST(Frame, ResetStreamFrameConvert) {
   EXPECT_EQ(memcmp(gfl.data, gfl_data, 6), 0);
   //  test convert bin to frame;
   FrameResetStream recv_frame;
-  FrameType TypeFrame;
-  ConvertGFLToFrame(&gfl, &recv_frame, &TypeFrame);
-  EXPECT_EQ(TypeFrame, FrameType::kResetStream);
-  EXPECT_EQ(recv_frame.stream_id, 12345);
-  EXPECT_EQ(recv_frame.error_code, 12345);
-  EXPECT_EQ(recv_frame.final_size, 12345);
+  FrameType frame_type;
+  ConvertGFLToFrame(&gfl, &recv_frame, &frame_type);
+  EXPECT_EQ(frame_type, FrameType::kResetStream);
+  EXPECT_EQ(recv_frame.stream_id, frame.stream_id);
+  EXPECT_EQ(recv_frame.error_code, frame.error_code);
+  EXPECT_EQ(recv_frame.final_size, frame.final_size);
 }

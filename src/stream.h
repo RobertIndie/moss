@@ -53,28 +53,32 @@ class SendSide : public StreamSide, public CommandExecutor {
   struct CmdWriteData : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
-    explicit CmdWriteData(std::shared_ptr<std::stringstream> data)
-        : data_(data) {}
+    explicit CmdWriteData(std::shared_ptr<std::stringstream> data,
+                          bool is_final)
+        : data_(data), is_final_(is_final) {}
 
-   protected:
+   private:
+    bool is_final_;
     std::shared_ptr<std::stringstream> data_;
-    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->WriteData(data_); }
+    int Call(SendSide* const sendSide) {
+      sendSide->WriteData(data_, is_final_);
+    }
   };
   struct CmdEndStream : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
     CmdEndStream() {}
 
-   protected:
-    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->EndStream(); }
+   private:
+    int Call(SendSide* const sendSide) { sendSide->EndStream(); }
   };
   struct CmdResetStream : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
     CmdResetStream() {}
 
-   protected:
-    int Call(std::shared_ptr<SendSide> sendSide) { sendSide->ResetStream(); }
+   private:
+    int Call(SendSide* const sendSide) { sendSide->ResetStream(); }
   };
   //                              O
   //                              +
@@ -114,9 +118,9 @@ class SendSide : public StreamSide, public CommandExecutor {
   };
   explicit SendSide(Stream* const stream);
   void PushCommand(std::shared_ptr<CommandBase> cmd) {
-    cmdQueue_->PushCmd(std::dynamic_pointer_cast<CmdSendSide>(cmd));
+    cmdQueue_->PushCmdAndResume(std::dynamic_pointer_cast<CmdSendSide>(cmd));
   }
-#ifdef __MOST_TEST
+#ifdef __MOSS_TEST
 
  public:
 #else
@@ -130,14 +134,13 @@ class SendSide : public StreamSide, public CommandExecutor {
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
   unsigned int flow_credit_ = 1500;
-  // unsigned int mss_ = 512;
   std::stringstream send_buffer_;
   unsigned char signal_;
   inline std::streampos GetSendBufferLen() {
     return send_buffer_.tellp() - send_buffer_.tellg();
   }
 
-  void SendData();
+  void SendData(int data_pos, bool final = false);
   void SendDataBlocked(std::streampos data_limit);
 
   int OnSend();
@@ -147,7 +150,7 @@ class SendSide : public StreamSide, public CommandExecutor {
   int OnResetRecvd();
 
   void ConsumeCmd();
-  void WriteData(std::shared_ptr<std::stringstream> gfl);
+  void WriteData(std::shared_ptr<std::stringstream> data, bool is_final);
   void EndStream();
   void ResetStream();
 
@@ -174,6 +177,12 @@ class Stream {
         direct_(direct),
         sendSide_(this),
         recvSide_(this) {}
+
+  // TODO(Multi-thread): just for test
+  void WriteData(const char* data, int data_len, bool is_final = false);
+  void EndStream();
+  void ResetStream();
+  // ====
 
 #ifdef __MOSS_TEST
 
