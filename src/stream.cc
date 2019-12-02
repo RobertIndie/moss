@@ -59,6 +59,9 @@ void SendSide::SendData(int data_pos, bool final) {
 }
 
 void SendSide::SendDataBlocked(std::streampos data_limit) {
+  // TODO(gfl-fraeme): use frame conversion
+  std::shared_ptr<GenericFrameLayout> gfl(new GenericFrameLayout);
+  gfl->frame_type_bits = FrameType::kStreamDataBlocked;
   auto gfl = std::make_shared<GenericFrameLayout>();
   auto frame = std::make_shared<FrameStreamDataBlocked>();
   frame->stream_data_limit = data_limit;
