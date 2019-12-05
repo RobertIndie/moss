@@ -17,39 +17,37 @@
 #ifndef UTIL_DATABUFFER_H_
 #define UTIL_DATABUFFER_H_
 
+#include <pthread.h>
 #include <memory>
 #include <vector>
+
+class DPTR {
+ public:
+  DataBuffer::ID_t ptrID = 0;
+  uint64_t ptr_ = 0;
+  const DPTR* constraint_ = nullptr;
+};
+
+class DataReader : public DPTR {
+ public:
+  void Read(int count = -1, char* data = nullptr);
+};
+
+class DataWriter : public DPTR {
+ public:
+  void Write(int count, char* data);
+};
 
 class DataBuffer {
  public:
   typedef uint32_t ID_t;
-  explicit DataBuffer(size_t init_size = 8, bool fixed_size = false)
-      : block_size(init_size), fixed_size_(fixed_size) {
-    DataBlock* block = new DataBlock(init_size);
-    blocks_.push_back(block);
-  }
-  ~DataBuffer() {
-    for (auto iter = blocks_.begin(); iter != blocks_.end(); ++iter) {
-      auto p = *iter;
-      if (p != nullptr) delete p;
-    }
-  }
-  ID_t NewReader(ID_t constraintReader = -1) {
-    DPTR reader;
-    reader.ptr_ = 0;
-    if (constraintReader != -1) {
-      reader.constraint_ = &readers_[constraintReader];
-    }
-    readers_.push_back(reader);
-    return readers_.size() - 1;
-  }
+  explicit DataBuffer(size_t init_size = 8, bool fixed_size = false);
+  ~DataBuffer();
+  std::shared_ptr<DataReader> NewReader(ID_t constraintPtr = -1);
+  std::shared_ptr<DataWriter> NewWriter();
+  friend struct Reader;
 
  private:
-  struct DPTR {
-    ID_t block_id = 0;
-    uint64_t ptr_;
-    const DPTR* constraint_;
-  };
   struct DataBlock {
     char* const buffer_;
     const size_t len_;
@@ -57,10 +55,11 @@ class DataBuffer {
     ~DataBlock() { delete[] buffer_; }
   };
   std::vector<DataBlock*> blocks_;
-  std::vector<DPTR> readers_;
-  std::vector<DPTR> writers_;
+  std::vector<std::shared_ptr<DataReader>> readers_;
+  std::vector<std::shared_ptr<DataWriter>> writers_;
   bool fixed_size_;
   const size_t block_size;
+  pthread_rwlock_t lock_;
 };
 
 #endif  // UTIL_DATABUFFER_H_
