@@ -23,7 +23,7 @@
 #include "./co_routine.h"
 #include "./command.h"
 #include "./frame.h"
-#include "./fsm/fsm.h"
+#include "./util/fsm.h"
 #include "./interfaces.h"
 
 namespace moss {

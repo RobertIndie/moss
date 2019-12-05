@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
-#ifndef DATABUFFER_H_
-#define DATABUFFER_H_
+#ifndef UTIL_DATABUFFER_H_
+#define UTIL_DATABUFFER_H_
 
 #include <memory>
 #include <vector>
@@ -63,4 +63,4 @@ class DataBuffer {
   const size_t block_size;
 };
 
-#endif  // DATABUFFER_H_
+#endif  // UTIL_DATABUFFER_H_
