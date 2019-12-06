@@ -17,6 +17,18 @@
 #include "util/databuffer.h"
 #include "util/util.h"
 
+#define READ_LOCK(lock) pthread_rwlock_rdlock(&lock);
+#define WRITE_LOCK(lock) pthread_rwlock_wrlock(&lock);
+#define DEFER_UNLOCK(lock) DEFER(pthread_rwlock_unlock(&lock);)
+
+DPTR DPTR::operator+(DPTR& dptr) {
+  auto result = (static_cast<int64_t>(ptr_) + dptr.ptr_) % buffer_->cap_size_;
+  if (result < 0) {
+    result += buffer_->cap_size_;
+  }
+  ptr_ = result;
+}
+
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
     : block_size(init_size), fixed_size_(fixed_size) {
   DataBlock* block = new DataBlock(init_size);
@@ -31,9 +43,10 @@ DataBuffer::~DataBuffer() {
 }
 
 std::shared_ptr<DataReader> DataBuffer::NewReader(ID_t constraintReader) {
-  pthread_rwlock_rdlock(&lock_);
-  DEFER(pthread_rwlock_unlock(&lock_);)
+  WRITE_LOCK(lock_);
+  DEFER_UNLOCK(lock_)
   auto reader = std::make_shared<DataReader>();
+  reader->buffer = this;
   if (constraintReader != -1) {
     reader->constraint_ =
         readers_[constraintReader]
@@ -44,11 +57,45 @@ std::shared_ptr<DataReader> DataBuffer::NewReader(ID_t constraintReader) {
   return reader;
 }
 
-std::shared_ptr<DataWriter> DataBuffer::NewWriter() {
-  pthread_rwlock_rdlock(&lock_);
-  DEFER(pthread_rwlock_unlock(&lock_);)
-  auto writer = std::make_shared<DataWriter>();
-  writer->ptrID = writers_.size() - 1;
-  writers_.push_back(writer);
-  return writer;
+uint64_t DataBuffer::MovePtr(uint64_t ptr, int64_t offset) {
+  auto result = (static_cast<int64_t>(ptr) + offset) % cap_size_;
+  if (result < 0) {
+    result += cap_size_;
+  }
+  return result;
+}
+
+int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
+                     char* data) {
+  READ_LOCK(lock_);
+  DEFER_UNLOCK(lock_)
+  // check constraint, set end_ptr
+  uint64_t end_ptr;
+  if (reader->constraint_ != nullptr) {
+    end_ptr = reader->constraint_->ptr_;
+  } else {
+    end_ptr = writer_pos_;
+  }
+  if (MovePtr(end_ptr, -reader->ptr_) > count) {
+    end_ptr = MovePtr(reader->ptr_, count);
+  }
+  // get data
+  if (data == nullptr) {
+    reader->ptr_ = end_ptr;
+  } else {
+    // TODO(GetData)
+  }
+  auto read_count = MovePtr(end_ptr, -reader->ptr_);
+  reader->ptr_ = end_ptr;
+  // resize
+  if (auto s = blocks_.size() >= 2) {
+    auto last = blocks_[s - 1];
+    float thresold = static_cast<float>(last->len_) * 3 / 4;
+  }
+  return read_count;
+}
+
+int DataBuffer::Writer(const int count, const char* data) {
+  WRITE_LOCK(lock_);
+  DEFER_UNLOCK(lock_)
 }

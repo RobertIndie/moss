@@ -20,32 +20,31 @@
 #include <pthread.h>
 #include <memory>
 #include <vector>
-
+typedef uint32_t ID_t;
 class DPTR {
  public:
-  DataBuffer::ID_t ptrID = 0;
+  friend class DataBuffer;
+  ID_t ptrID = 0;
+  DPTR operator+(DPTR& dptr);
+
+ private:
   uint64_t ptr_ = 0;
-  const DPTR* constraint_ = nullptr;
+  DataBuffer* buffer_;
 };
 
 class DataReader : public DPTR {
  public:
-  void Read(int count = -1, char* data = nullptr);
-};
-
-class DataWriter : public DPTR {
- public:
-  void Write(int count, char* data);
+  friend class DataBuffer;
+  int Read(const int count = -1, char* data = nullptr);
+  const DataReader* constraint_ = nullptr;
 };
 
 class DataBuffer {
  public:
-  typedef uint32_t ID_t;
+  friend class DataReader;
   explicit DataBuffer(size_t init_size = 8, bool fixed_size = false);
   ~DataBuffer();
   std::shared_ptr<DataReader> NewReader(ID_t constraintPtr = -1);
-  std::shared_ptr<DataWriter> NewWriter();
-  friend struct Reader;
 
  private:
   struct DataBlock {
@@ -55,11 +54,16 @@ class DataBuffer {
     ~DataBlock() { delete[] buffer_; }
   };
   std::vector<DataBlock*> blocks_;
+  uint64_t cap_size_ = 0;
+  uint64_t data_size_ = 0;
   std::vector<std::shared_ptr<DataReader>> readers_;
-  std::vector<std::shared_ptr<DataWriter>> writers_;
   bool fixed_size_;
-  const size_t block_size;
+  const size_t block_size;  // data size in the first data block
   pthread_rwlock_t lock_;
+  uint64_t writer_pos_ = 0;
+  uint64_t MovePtr(uint64_t ptr, int64_t offset);
+  int Read(std::shared_ptr<DataReader> reader, const int count, char* data);
+  int Writer(const int count, const char* data);
 };
 
 #endif  // UTIL_DATABUFFER_H_
