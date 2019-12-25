@@ -21,38 +21,43 @@
 #define WRITE_LOCK(lock) pthread_rwlock_wrlock(&lock);
 #define DEFER_UNLOCK(lock) DEFER(pthread_rwlock_unlock(&lock);)
 
-DPTR DPTR::operator+(DPTR& dptr) {
-  auto result = (static_cast<int64_t>(ptr_) + dptr.ptr_) % buffer_->cap_size_;
+DPTR& DPTR::operator+=(Index_t offset) {
+  ptr_ = Move(ptr_, offset);
+  return *this;
+}
+
+bool DPTR::operator<(const DPTR& rhs) {
+  auto offset = buffer_->cap_size_ - buffer_->writer_pos_ - 1;
+  return Move(ptr_, offset) < Move(rhs.ptr_, offset);
+}
+
+bool DPTR::operator>(const DPTR& rhs) { return rhs < *this; }
+
+Index_t DPTR::Move(Index_t ptr, Index_t offset) {
+  auto result = (static_cast<Index_t>(ptr) + offset) % buffer_->cap_size_;
   if (result < 0) {
     result += buffer_->cap_size_;
   }
-  ptr_ = result;
+  return result;
 }
 
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
     : block_size(init_size), fixed_size_(fixed_size) {
-  DataBlock* block = new DataBlock(init_size);
-  blocks_.push_back(block);
+  block_ = std::make_shared<DataBlock>(init_size);
 }
 
 DataBuffer::~DataBuffer() {
-  for (auto iter = blocks_.begin(); iter != blocks_.end(); ++iter) {
-    auto p = *iter;
-    if (p != nullptr) delete p;
-  }
+  // for (auto iter = blocks_.begin(); iter != blocks_.end(); ++iter) {
+  //   auto p = *iter;
+  //   if (p != nullptr) delete p;
+  // }
 }
 
-std::shared_ptr<DataReader> DataBuffer::NewReader(ID_t constraintReader) {
+std::shared_ptr<DataReader> DataBuffer::NewReader(
+    const DataReader* const constraintReader) {
   WRITE_LOCK(lock_);
   DEFER_UNLOCK(lock_)
-  auto reader = std::make_shared<DataReader>();
-  reader->buffer = this;
-  if (constraintReader != -1) {
-    reader->constraint_ =
-        readers_[constraintReader]
-            .get();  // when other reader closed, it may be null
-  }
-  reader->ptrID = readers_.size() - 1;
+  auto reader = std::make_shared<DataReader>(this, constraintReader);
   readers_.push_back(reader);
   return reader;
 }
