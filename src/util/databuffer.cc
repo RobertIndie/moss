@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
 #include "util/databuffer.h"
+#include <math.h>
+#include <algorithm>
 #include "util/util.h"
 
 #define READ_LOCK(lock) pthread_rwlock_rdlock(&lock);
@@ -93,22 +95,54 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
   } else {
     end_ptr = writer_pos_;
   }
-  if (MovePtr(end_ptr, -reader->ptr_) > count) {
+  auto offset = cap_size_ - writer_pos_ - 1;
+  auto maxCount =
+      reader->Move(end_ptr, offset) - reader->Move(reader->ptr_, offset);
+  if (maxCount > count) {
     end_ptr = MovePtr(reader->ptr_, count);
   }
   // get data
-  if (data == nullptr) {
-    reader->ptr_ = end_ptr;
-  } else {
-    // TODO(GetData)
+  Index_t read_count;
+  char* out_data = nullptr;
+  if (data != nullptr) {
+    read_count = end_ptr - reader->ptr_;
+    if (read_count >= 0) {
+      out_data = new char[read_count];
+      memcpy(out_data, block_->buffer_ + reader->ptr_, read_count);
+    } else {
+      read_count += cap_size_;
+      out_data = new char[read_count];
+      memcpy(out_data, block_->buffer_ + reader->ptr_,
+             cap_size_ - reader->ptr_);
+      memcpy(out_data + cap_size_ - reader->ptr_, block_->buffer_, end_ptr);
+    }
   }
-  auto read_count = MovePtr(end_ptr, -reader->ptr_);
   reader->ptr_ = end_ptr;
+  auto min = *std::max_element(readers_.begin(), readers_.end());
+  data_size_ = min->Move(writer_pos_, offset) - min->Move(min->ptr_, offset);
   // resize
   // if (auto s = blocks_.size() >= 2) {
   //   auto last = blocks_[s - 1];
   //   float thresold = static_cast<float>(last->len_) * 3 / 4;
   // }
+  if (data_size_ <= block_->len_ / 2 && cap_size_ >= 2) {
+    auto new_cap_size = ceil(log2(data_size_ / block_size));
+    auto new_block = std::make_shared<DataBlock>(new_cap_size);
+    auto start_pos = min->ptr_;
+    if (writer_pos_ >= start_pos) {
+      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
+             writer_pos_ - start_pos);
+    } else {
+      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
+             cap_size_ - start_pos);
+      memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
+    }
+    for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
+      (**iter).Move((**iter).ptr_, -start_pos);
+    }
+    writer_pos_ = min->Move(writer_pos_, -start_pos);
+    cap_size_ = cap_size_ / 2;
+  }
   return read_count;
 }
 

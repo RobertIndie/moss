@@ -24,11 +24,19 @@ TEST(DataBuffer, DPTR) {
   auto a = buffer.NewReader();
   auto b = buffer.NewReader();
   buffer.writer_pos_ = 5;
-  // 测试MovePtr
+  // test Move
   EXPECT_EQ(a->Move(a->ptr_, -1), 7);
   EXPECT_EQ(a->Move(a->ptr_, 7), 7);
   EXPECT_EQ(a->Move(a->ptr_, 8), 0);
   *a += 1;
   EXPECT_EQ(a->ptr_, 1);
   EXPECT_EQ(*a > *b, true);
+}
+
+TEST(DataBuffer, Read) {
+  DataBuffer buffer;
+  auto a = buffer.NewReader();
+  buffer.writer_pos_ = 5;
+  EXPECT_EQ(a->Read(3), 3);
+  
 }
