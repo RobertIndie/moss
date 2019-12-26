@@ -13,13 +13,18 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
-
+#ifndef __MOSS_TEST
+#define __MOSS_TEST
+#endif
 #include "gtest/gtest.h"
 #include "util/databuffer.h"
 
 TEST(DataBuffer, DPTR) {
   DataBuffer buffer;
-  DPTR dptra(&buffer), dptrb(&buffer);
-  dptra += 1;
-  EXPECT_EQ(dptra > dptrb, true);
+  auto a = buffer.NewReader();
+  auto b = buffer.NewReader();
+  buffer.writer_pos_ = 5;
+  *a += 1;
+  EXPECT_EQ(a->ptr_, 1);
+  EXPECT_EQ(*a > *b, true);
 }

@@ -25,7 +25,7 @@ typedef uint32_t Index_t;
 class DPTR {
  public:
   friend class DataBuffer;
-  explicit DPTR(DataBuffer* const buffer) : buffer_(buffer) {}
+  friend class DataReader;
   DPTR& operator+=(Index_t offset);
   bool operator<(const DPTR& rhs) const;
   bool operator>(const DPTR& rhs) const;
@@ -34,7 +34,13 @@ class DPTR {
   bool operator==(const DPTR& rhs) const;
   bool operator!=(const DPTR& rhs) const;
 
+#ifdef __MOSS_TEST
+ public:
+#else
  private:
+#endif
+  explicit DPTR(DataBuffer* const buffer)
+      : buffer_(buffer) {}  // 私有构造函数使得不能直接进行实例化
   Index_t ptr_ = 0;
   DataBuffer* const buffer_;
   Index_t Move(Index_t ptr, Index_t offset) const;
@@ -58,9 +64,13 @@ class DataBuffer {
   explicit DataBuffer(size_t init_size = 8, bool fixed_size = false);
   ~DataBuffer();
   std::shared_ptr<DataReader> NewReader(
-      const DataReader* const constraintReader);
+      const DataReader* const constraintReader = nullptr);
 
+#ifdef __MOSS_TEST
+ public:
+#else
  private:
+#endif
   struct DataBlock {
     char* const buffer_;
     const size_t len_;
@@ -77,7 +87,7 @@ class DataBuffer {
   uint64_t writer_pos_ = 0;  // 准备写入的位置
   uint64_t MovePtr(uint64_t ptr, int64_t offset);
   int Read(std::shared_ptr<DataReader> reader, const int count, char* data);
-  int Writer(const int count, const char* data);
+  int Write(const int count, const char* data);
 };
 
 #endif  // UTIL_DATABUFFER_H_

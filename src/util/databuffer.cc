@@ -54,6 +54,8 @@ Index_t DPTR::Move(Index_t ptr, Index_t offset) const {
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
     : block_size(init_size), fixed_size_(fixed_size) {
   block_ = std::make_shared<DataBlock>(init_size);
+  cap_size_ = init_size;
+  pthread_rwlock_init(&lock_, nullptr);
 }
 
 DataBuffer::~DataBuffer() {
@@ -103,14 +105,15 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
   auto read_count = MovePtr(end_ptr, -reader->ptr_);
   reader->ptr_ = end_ptr;
   // resize
-  if (auto s = blocks_.size() >= 2) {
-    auto last = blocks_[s - 1];
-    float thresold = static_cast<float>(last->len_) * 3 / 4;
-  }
+  // if (auto s = blocks_.size() >= 2) {
+  //   auto last = blocks_[s - 1];
+  //   float thresold = static_cast<float>(last->len_) * 3 / 4;
+  // }
   return read_count;
 }
 
-int DataBuffer::Writer(const int count, const char* data) {
+int DataBuffer::Write(const int count, const char* data) {
   WRITE_LOCK(lock_);
   DEFER_UNLOCK(lock_)
+  return 0;
 }
