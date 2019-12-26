@@ -26,14 +26,24 @@ DPTR& DPTR::operator+=(Index_t offset) {
   return *this;
 }
 
-bool DPTR::operator<(const DPTR& rhs) {
+bool DPTR::operator<(const DPTR& rhs) const {
   auto offset = buffer_->cap_size_ - buffer_->writer_pos_ - 1;
   return Move(ptr_, offset) < Move(rhs.ptr_, offset);
 }
 
-bool DPTR::operator>(const DPTR& rhs) { return rhs < *this; }
+bool DPTR::operator>(const DPTR& rhs) const { return rhs < *this; }
 
-Index_t DPTR::Move(Index_t ptr, Index_t offset) {
+bool DPTR::operator<=(const DPTR& rhs) const { return !(rhs > *this); }
+
+bool DPTR::operator>=(const DPTR& rhs) const { return !(rhs < *this); }
+
+bool DPTR::operator==(const DPTR& rhs) const { return rhs.ptr_ == this->ptr_; }
+
+bool DPTR::operator!=(const DPTR& rhs) const {
+  return !(rhs.ptr_ == this->ptr_);
+}
+
+Index_t DPTR::Move(Index_t ptr, Index_t offset) const {
   auto result = (static_cast<Index_t>(ptr) + offset) % buffer_->cap_size_;
   if (result < 0) {
     result += buffer_->cap_size_;

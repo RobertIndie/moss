@@ -27,17 +27,17 @@ class DPTR {
   friend class DataBuffer;
   explicit DPTR(DataBuffer* const buffer) : buffer_(buffer) {}
   DPTR& operator+=(Index_t offset);
-  bool operator<(const DPTR& rhs);
-  bool operator>(const DPTR& rhs);
-  bool operator<=(const DPTR& rhs);
-  bool operator>=(const DPTR& rhs);
-  bool operator==(const DPTR& rhs);
-  bool operator<(const DPTR& rhs);
+  bool operator<(const DPTR& rhs) const;
+  bool operator>(const DPTR& rhs) const;
+  bool operator<=(const DPTR& rhs) const;
+  bool operator>=(const DPTR& rhs) const;
+  bool operator==(const DPTR& rhs) const;
+  bool operator!=(const DPTR& rhs) const;
 
  private:
   Index_t ptr_ = 0;
   DataBuffer* const buffer_;
-  Index_t Move(Index_t ptr, Index_t offset);
+  Index_t Move(Index_t ptr, Index_t offset) const;
 };
 
 class DataReader : public DPTR {
