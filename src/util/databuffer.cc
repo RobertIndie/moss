@@ -120,12 +120,14 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
   reader->ptr_ = end_ptr;
   auto min = *std::max_element(readers_.begin(), readers_.end());
   data_size_ = min->Move(writer_pos_, offset) - min->Move(min->ptr_, offset);
-  // resize
-  // if (auto s = blocks_.size() >= 2) {
-  //   auto last = blocks_[s - 1];
-  //   float thresold = static_cast<float>(last->len_) * 3 / 4;
-  // }
-  if (data_size_ <= block_->len_ / 2 && cap_size_ >= 2) {
+// resize
+// if (auto s = blocks_.size() >= 2) {
+//   auto last = blocks_[s - 1];
+//   float thresold = static_cast<float>(last->len_) * 3 / 4;
+// }
+#define SCHMIDT_COEFFICIENT (3 / 8)
+  if (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
+      cap_size_ >= 2) {  // 施密特触发降低resize灵敏度
     auto new_cap_size = ceil(log2(data_size_ / block_size));
     auto new_block = std::make_shared<DataBlock>(new_cap_size);
     auto start_pos = min->ptr_;
@@ -141,7 +143,8 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
       (**iter).Move((**iter).ptr_, -start_pos);
     }
     writer_pos_ = min->Move(writer_pos_, -start_pos);
-    cap_size_ = cap_size_ / 2;
+    cap_size_ = new_cap_size;
+    block_ = new_block;
   }
   return read_count;
 }
