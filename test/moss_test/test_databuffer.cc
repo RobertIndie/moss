@@ -38,5 +38,4 @@ TEST(DataBuffer, Read) {
   auto a = buffer.NewReader();
   buffer.writer_pos_ = 5;
   EXPECT_EQ(a->Read(3), 3);
-  
 }

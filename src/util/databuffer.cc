@@ -46,11 +46,20 @@ bool DPTR::operator!=(const DPTR& rhs) const {
 }
 
 Index_t DPTR::Move(Index_t ptr, Index_t offset) const {
-  auto result = (static_cast<Index_t>(ptr) + offset) % buffer_->cap_size_;
+  return DPTR::MovePtr(buffer_, ptr, offset);
+}
+
+Index_t DPTR::MovePtr(const DataBuffer* const buffer, Index_t ptr,
+                      Index_t offset) {
+  auto result = (static_cast<Index_t>(ptr) + offset) % buffer->cap_size_;
   if (result < 0) {
-    result += buffer_->cap_size_;
+    result += buffer->cap_size_;
   }
   return result;
+}
+
+int DataReader::Read(const int count, char* data) {
+  buffer_->Read(this, count, data);
 }
 
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
@@ -84,8 +93,7 @@ uint64_t DataBuffer::MovePtr(uint64_t ptr, int64_t offset) {
   return result;
 }
 
-int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
-                     char* data) {
+int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   READ_LOCK(lock_);
   DEFER_UNLOCK(lock_)
   // check constraint, set end_ptr
@@ -104,8 +112,8 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
   // get data
   Index_t read_count;
   char* out_data = nullptr;
+  read_count = end_ptr - reader->ptr_;
   if (data != nullptr) {
-    read_count = end_ptr - reader->ptr_;
     if (read_count >= 0) {
       out_data = new char[read_count];
       memcpy(out_data, block_->buffer_ + reader->ptr_, read_count);
@@ -121,10 +129,6 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
   auto min = *std::max_element(readers_.begin(), readers_.end());
   data_size_ = min->Move(writer_pos_, offset) - min->Move(min->ptr_, offset);
 // resize
-// if (auto s = blocks_.size() >= 2) {
-//   auto last = blocks_[s - 1];
-//   float thresold = static_cast<float>(last->len_) * 3 / 4;
-// }
 #define SCHMIDT_COEFFICIENT (3 / 8)
   if (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
       cap_size_ >= 2) {  // 施密特触发降低resize灵敏度
@@ -152,5 +156,28 @@ int DataBuffer::Read(std::shared_ptr<DataReader> reader, const int count,
 int DataBuffer::Write(const int count, const char* data) {
   WRITE_LOCK(lock_);
   DEFER_UNLOCK(lock_)
+  // resize
+  if (data_size_ + count >= cap_size_) {
+    auto offset = cap_size_ - writer_pos_ - 1;
+    auto min = *std::max_element(readers_.begin(), readers_.end());
+    auto new_cap_size = ceil(log2(data_size_ / block_size));
+    auto new_block = std::make_shared<DataBlock>(new_cap_size);
+    auto start_pos = min->ptr_;
+    if (writer_pos_ >= start_pos) {
+      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
+             writer_pos_ - start_pos);
+    } else {
+      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
+             cap_size_ - start_pos);
+      memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
+    }
+    for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
+      (**iter).Move((**iter).ptr_, -start_pos);
+    }
+    writer_pos_ = min->Move(writer_pos_, -start_pos);
+    cap_size_ = new_cap_size;
+    block_ = new_block;
+  }
+
   return 0;
 }

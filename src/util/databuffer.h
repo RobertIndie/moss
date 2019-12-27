@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 class DataBuffer;
-typedef uint32_t Index_t;
+typedef int64_t Index_t;
 class DPTR {
  public:
   friend class DataBuffer;
@@ -44,6 +44,8 @@ class DPTR {
   Index_t ptr_ = 0;
   DataBuffer* const buffer_;
   Index_t Move(Index_t ptr, Index_t offset) const;
+  static Index_t MovePtr(const DataBuffer* const buffer, Index_t ptr,
+                      Index_t offset);
 };
 
 class DataReader : public DPTR {
@@ -51,7 +53,7 @@ class DataReader : public DPTR {
   friend class DataBuffer;
   DataReader(DataBuffer* const buffer, const DataReader* const constraint)
       : DPTR(buffer), constraint_(constraint) {}
-  int Read(const int count = -1, char* data = nullptr);
+  int Read(const int count, char* data = nullptr);
 
  private:
   const DataReader* const constraint_;
@@ -86,8 +88,8 @@ class DataBuffer {
   pthread_rwlock_t lock_;
   uint64_t writer_pos_ = 0;  // 准备写入的位置
   uint64_t MovePtr(uint64_t ptr, int64_t offset);
-  int Read(std::shared_ptr<DataReader> reader, const int count,
-           char* data);  // 将自动申请内存
+  int Read(DataReader* const reader, const int count,
+           char* data = nullptr);  // 将自动申请内存
   int Write(const int count, const char* data);
 };
 
