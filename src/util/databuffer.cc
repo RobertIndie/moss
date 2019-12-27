@@ -89,6 +89,25 @@ uint64_t DataBuffer::MovePtr(uint64_t ptr, int64_t offset) {
   return result;
 }
 
+void DataBuffer::Resize(std::shared_ptr<DataReader> min, Index_t new_cap_size) {
+  auto new_block = std::make_shared<DataBlock>(new_cap_size);
+  auto start_pos = min->ptr_;
+  if (writer_pos_ >= start_pos) {
+    memcpy(new_block->buffer_, block_->buffer_ + start_pos,
+           writer_pos_ - start_pos);
+  } else {
+    memcpy(new_block->buffer_, block_->buffer_ + start_pos,
+           cap_size_ - start_pos);
+    memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
+  }
+  for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
+    DPTR::Move(this, (**iter).ptr_, -start_pos);
+  }
+  writer_pos_ = DPTR::Move(this, writer_pos_, -start_pos);
+  cap_size_ = new_cap_size;
+  block_ = new_block;
+}
+
 int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   READ_LOCK(lock_);
   DEFER_UNLOCK(lock_)
@@ -102,7 +121,7 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   auto offset = cap_size_ - writer_pos_ - 1;
   auto maxCount = DPTR::Move(this, end_ptr, offset) -
                   DPTR::Move(this, reader->ptr_, offset);
-  if (maxCount > count) {
+  if (count != -1 && maxCount > count) {
     end_ptr = MovePtr(reader->ptr_, count);
   }
   // get data
@@ -111,11 +130,11 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   read_count = end_ptr - reader->ptr_;
   if (data != nullptr) {
     if (read_count >= 0) {
-      out_data = new char[read_count];
+      // out_data = new char[read_count];
       memcpy(out_data, block_->buffer_ + reader->ptr_, read_count);
     } else {
       read_count += cap_size_;
-      out_data = new char[read_count];
+      // out_data = new char[read_count];
       memcpy(out_data, block_->buffer_ + reader->ptr_,
              cap_size_ - reader->ptr_);
       memcpy(out_data + cap_size_ - reader->ptr_, block_->buffer_, end_ptr);
@@ -130,22 +149,7 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   if (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
       cap_size_ >= 2) {  // 施密特触发降低resize灵敏度
     auto new_cap_size = ceil(log2(data_size_ / block_size));
-    auto new_block = std::make_shared<DataBlock>(new_cap_size);
-    auto start_pos = min->ptr_;
-    if (writer_pos_ >= start_pos) {
-      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
-             writer_pos_ - start_pos);
-    } else {
-      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
-             cap_size_ - start_pos);
-      memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
-    }
-    for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
-      DPTR::Move(this, (**iter).ptr_, -start_pos);
-    }
-    writer_pos_ = DPTR::Move(this, writer_pos_, -start_pos);
-    cap_size_ = new_cap_size;
-    block_ = new_block;
+    Resize(min, new_cap_size);
   }
   return read_count;
 }
@@ -156,25 +160,23 @@ int DataBuffer::Write(const int count, const char* data) {
   // resize
   if (data_size_ + count >= cap_size_) {
     auto offset = cap_size_ - writer_pos_ - 1;
+    if (readers_.size() == 0) {
+      DLOG(ERROR) << "No readers.";
+      throw "No readers.";
+    }
     auto min = *std::max_element(readers_.begin(), readers_.end());
     auto new_cap_size = ceil(log2(data_size_ / block_size));
-    auto new_block = std::make_shared<DataBlock>(new_cap_size);
-    auto start_pos = min->ptr_;
-    if (writer_pos_ >= start_pos) {
-      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
-             writer_pos_ - start_pos);
-    } else {
-      memcpy(new_block->buffer_, block_->buffer_ + start_pos,
-             cap_size_ - start_pos);
-      memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
-    }
-    for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
-      DPTR::Move(this, (**iter).ptr_, -start_pos);
-    }
-    writer_pos_ = DPTR::Move(this, writer_pos_, -start_pos);
-    cap_size_ = new_cap_size;
-    block_ = new_block;
+    Resize(min, new_cap_size);
   }
-
-  return 0;
+  auto end_ptr = DPTR::Move(this, writer_pos_, count);
+  auto write_count = end_ptr - writer_pos_;
+  if (write_count >= 0) {
+    memcpy(block_->buffer_ + writer_pos_, data, write_count);
+  } else {
+    memcpy(block_->buffer_ + writer_pos_, data, cap_size_ - writer_pos_);
+    memcpy(block_->buffer_, data + cap_size_ - writer_pos_, end_ptr);
+  }
+  writer_pos_ = end_ptr;
+  data_size_ += write_count;
+  return write_count;
 }

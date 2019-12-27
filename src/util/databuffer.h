@@ -87,8 +87,10 @@ class DataBuffer {
   pthread_rwlock_t lock_;
   uint64_t writer_pos_ = 0;  // 准备写入的位置
   uint64_t MovePtr(uint64_t ptr, int64_t offset);
-  int Read(DataReader* const reader, const int count,
-           char* data = nullptr);  // 将自动申请内存
+  void Resize(std::shared_ptr<DataReader> min, Index_t new_cap_size);
+  // 读取数据
+  // 外部负责申请管理内存，当count为-1时，则读取所有可读取的数据
+  int Read(DataReader* const reader, const int count, char* data = nullptr);
   int Write(const int count, const char* data);
 };
 

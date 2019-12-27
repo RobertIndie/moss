@@ -33,6 +33,17 @@ TEST(DataBuffer, DPTR) {
   EXPECT_EQ(*a > *b, true);
 }
 
+TEST(DataBuffer, Write) {
+  DataBuffer buffer(8, false);
+  auto reader = buffer.NewReader();
+  char write_data[5] = {1, 2, 3, 4, 5};
+  buffer.Write(5, write_data);
+  // EXPECT_EQ(memcmp(buffer.block_->buffer_, write_data, sizeof(write_data)),
+  // 0);
+  buffer.Write(5, write_data);
+  EXPECT_EQ(buffer.cap_size_, 16);
+}
+
 TEST(DataBuffer, Read) {
   DataBuffer buffer;
   auto a = buffer.NewReader();
