@@ -24,13 +24,13 @@
 #define DEFER_UNLOCK(lock) DEFER(pthread_rwlock_unlock(&lock);)
 
 DPTR& DPTR::operator+=(Index_t offset) {
-  ptr_ = Move(ptr_, offset);
+  ptr_ = Move(buffer_, ptr_, offset);
   return *this;
 }
 
 bool DPTR::operator<(const DPTR& rhs) const {
   auto offset = buffer_->cap_size_ - buffer_->writer_pos_ - 1;
-  return Move(ptr_, offset) < Move(rhs.ptr_, offset);
+  return Move(buffer_, ptr_, offset) < Move(buffer_, rhs.ptr_, offset);
 }
 
 bool DPTR::operator>(const DPTR& rhs) const { return rhs < *this; }
@@ -45,12 +45,8 @@ bool DPTR::operator!=(const DPTR& rhs) const {
   return !(rhs.ptr_ == this->ptr_);
 }
 
-Index_t DPTR::Move(Index_t ptr, Index_t offset) const {
-  return DPTR::MovePtr(buffer_, ptr, offset);
-}
-
-Index_t DPTR::MovePtr(const DataBuffer* const buffer, Index_t ptr,
-                      Index_t offset) {
+Index_t DPTR::Move(const DataBuffer* const buffer, Index_t ptr,
+                   Index_t offset) {
   auto result = (static_cast<Index_t>(ptr) + offset) % buffer->cap_size_;
   if (result < 0) {
     result += buffer->cap_size_;
@@ -104,8 +100,8 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
     end_ptr = writer_pos_;
   }
   auto offset = cap_size_ - writer_pos_ - 1;
-  auto maxCount =
-      reader->Move(end_ptr, offset) - reader->Move(reader->ptr_, offset);
+  auto maxCount = DPTR::Move(this, end_ptr, offset) -
+                  DPTR::Move(this, reader->ptr_, offset);
   if (maxCount > count) {
     end_ptr = MovePtr(reader->ptr_, count);
   }
@@ -127,7 +123,8 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   }
   reader->ptr_ = end_ptr;
   auto min = *std::max_element(readers_.begin(), readers_.end());
-  data_size_ = min->Move(writer_pos_, offset) - min->Move(min->ptr_, offset);
+  data_size_ = DPTR::Move(this, writer_pos_, offset) -
+               DPTR::Move(this, min->ptr_, offset);
 // resize
 #define SCHMIDT_COEFFICIENT (3 / 8)
   if (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
@@ -144,9 +141,9 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
       memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
     }
     for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
-      (**iter).Move((**iter).ptr_, -start_pos);
+      DPTR::Move(this, (**iter).ptr_, -start_pos);
     }
-    writer_pos_ = min->Move(writer_pos_, -start_pos);
+    writer_pos_ = DPTR::Move(this, writer_pos_, -start_pos);
     cap_size_ = new_cap_size;
     block_ = new_block;
   }
@@ -172,9 +169,9 @@ int DataBuffer::Write(const int count, const char* data) {
       memcpy(new_block->buffer_, block_->buffer_, writer_pos_);
     }
     for (auto iter = readers_.begin(); iter != readers_.end(); iter++) {
-      (**iter).Move((**iter).ptr_, -start_pos);
+      DPTR::Move(this, (**iter).ptr_, -start_pos);
     }
-    writer_pos_ = min->Move(writer_pos_, -start_pos);
+    writer_pos_ = DPTR::Move(this, writer_pos_, -start_pos);
     cap_size_ = new_cap_size;
     block_ = new_block;
   }

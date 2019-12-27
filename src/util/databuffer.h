@@ -43,8 +43,7 @@ class DPTR {
       : buffer_(buffer) {}  // 私有构造函数使得不能直接进行实例化
   Index_t ptr_ = 0;
   DataBuffer* const buffer_;
-  Index_t Move(Index_t ptr, Index_t offset) const;
-  static Index_t MovePtr(const DataBuffer* const buffer, Index_t ptr,
+  static Index_t Move(const DataBuffer* const buffer, Index_t ptr,
                       Index_t offset);
 };
 
