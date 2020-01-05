@@ -83,13 +83,13 @@ class DataBuffer {
     ~DataBlock() { delete[] buffer_; }
   };
   std::shared_ptr<DataBlock> block_;
-  uint64_t cap_size_ = 0;
-  uint64_t data_size_ = 0;
+  Index_t cap_size_ = 0;
+  Index_t data_size_ = 0;
   std::vector<std::shared_ptr<DataReader>> readers_;
   bool fixed_size_;
   const size_t block_size;  // data size in the first data block
   pthread_rwlock_t lock_;
-  uint64_t writer_pos_ = 0;  // 准备写入的位置
+  Index_t writer_pos_ = 0;  // 准备写入的位置
   uint64_t MovePtr(uint64_t ptr, int64_t offset);
   void Resize(std::shared_ptr<DataReader> min, Index_t new_cap_size);
   // 读取数据
