@@ -55,7 +55,7 @@ Index_t DPTR::Move(const DataBuffer* const buffer, Index_t ptr,
 }
 
 int DataReader::Read(const int count, char* data) {
-  buffer_->Read(this, count, data);
+  return buffer_->Read(this, count, data);
 }
 
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
@@ -127,29 +127,33 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   }
   // get data
   Index_t read_count;
-  char* out_data = nullptr;
-  read_count = end_ptr - reader->ptr_;
-  if (data != nullptr) {
-    if (read_count >= 0) {
-      // out_data = new char[read_count];
-      memcpy(out_data, block_->buffer_ + reader->ptr_, read_count);
-    } else {
-      read_count += cap_size_;
-      // out_data = new char[read_count];
-      memcpy(out_data, block_->buffer_ + reader->ptr_,
-             cap_size_ - reader->ptr_);
-      memcpy(out_data + cap_size_ - reader->ptr_, block_->buffer_, end_ptr);
+  auto diff = end_ptr - reader->ptr_;
+  if (diff >= 0) {
+    // out_data = new char[diff];
+    if (data != nullptr) memcpy(data, block_->buffer_ + reader->ptr_, diff);
+    read_count = diff;
+  } else {
+    diff += cap_size_;
+    if (data != nullptr) {
+      // out_data = new char[diff];
+      memcpy(data, block_->buffer_ + reader->ptr_, cap_size_ - reader->ptr_);
+      memcpy(data + cap_size_ - reader->ptr_, block_->buffer_, end_ptr);
     }
+    read_count = cap_size_ - reader->ptr_ + end_ptr;
   }
   reader->ptr_ = end_ptr;
   auto min = *std::max_element(readers_.begin(), readers_.end());
   data_size_ = DPTR::Move(this, writer_pos_, offset) -
                DPTR::Move(this, min->ptr_, offset);
 // resize
-#define SCHMIDT_COEFFICIENT (3 / 8)
+#define SCHMIDT_COEFFICIENT (3 / 8)  // 范围为0-1
   auto new_cap_size = cap_size_;
-  while (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
-         cap_size_ >= 2) {  // 施密特触发降低resize灵敏度
+  while (
+      data_size_ <
+          cap_size_ *
+              SCHMIDT_COEFFICIENT &&  // 需要使用小于号，当SCHMIDT_COEFFICIENT
+                                      // 为1时，则可预留空间
+      cap_size_ > block_size) {  // 施密特触发降低resize灵敏度
     cap_size_ /= 2;
   }
   if (new_cap_size != cap_size_) Resize(min, new_cap_size);
@@ -169,15 +173,15 @@ int DataBuffer::Write(const int count, const char* data) {
     }
     auto min = *std::max_element(readers_.begin(), readers_.end());
     auto current_cap_size = cap_size_;
-    while (current_cap_size < new_data_size) {
+    while (current_cap_size <= new_data_size) {  // 需要预留一字节空间
       current_cap_size *= 2;
     }
     Resize(min, current_cap_size);
   }
   auto end_ptr = DPTR::Move(this, writer_pos_, count);
-  auto write_count = end_ptr - writer_pos_;
-  if (write_count >= 0) {
-    memcpy(block_->buffer_ + writer_pos_, data, write_count);
+  auto diff = end_ptr - writer_pos_;
+  if (diff >= 0) {
+    memcpy(block_->buffer_ + writer_pos_, data, diff);
   } else {
     memcpy(block_->buffer_ + writer_pos_, data, cap_size_ - writer_pos_);
     memcpy(block_->buffer_, data + cap_size_ - writer_pos_, end_ptr);
