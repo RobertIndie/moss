@@ -146,15 +146,15 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
   data_size_ = DPTR::Move(this, writer_pos_, offset) -
                DPTR::Move(this, min->ptr_, offset);
 // resize
-#define SCHMIDT_COEFFICIENT (3 / 8)  // 范围为0-1
+#define SCHMIDT_COEFFICIENT (3.0 / 8.0)  // 范围为0-1
   auto new_cap_size = cap_size_;
   while (
       data_size_ <
-          cap_size_ *
+          new_cap_size *
               SCHMIDT_COEFFICIENT &&  // 需要使用小于号，当SCHMIDT_COEFFICIENT
                                       // 为1时，则可预留空间
-      cap_size_ > block_size) {  // 施密特触发降低resize灵敏度
-    cap_size_ /= 2;
+      new_cap_size > block_size) {  // 施密特触发降低resize灵敏度
+    new_cap_size /= 2;
   }
   if (new_cap_size != cap_size_) Resize(min, new_cap_size);
   return read_count;

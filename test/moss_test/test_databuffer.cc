@@ -34,7 +34,7 @@ TEST(DataBuffer, DPTR) {
 }
 
 TEST(DataBuffer, Write) {
-  DataBuffer buffer(8, false);
+  DataBuffer buffer(16, false);
   auto reader = buffer.NewReader();
   char write_data[5] = {1, 2, 3, 4, 5};
   buffer.Write(5, write_data);
@@ -56,6 +56,6 @@ TEST(DataBuffer, Read) {
   buffer.Write(sizeof(check_data), check_data);
   char read_data[8];
   EXPECT_EQ(reader->Read(8, read_data), 8);
-  EXPECT_EQ(buffer.cap_size_, 32);
+  EXPECT_EQ(buffer.cap_size_, 16);
   EXPECT_EQ(memcmp(read_data, check_data, sizeof(8)), 0);
 }
