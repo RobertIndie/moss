@@ -38,8 +38,8 @@ TEST(DataBuffer, Write) {
   auto reader = buffer.NewReader();
   char write_data[5] = {1, 2, 3, 4, 5};
   buffer.Write(5, write_data);
-  // EXPECT_EQ(memcmp(buffer.block_->buffer_, write_data, sizeof(write_data)),
-  // 0);
+  EXPECT_EQ(memcmp(buffer.block_->buffer_, write_data, sizeof(write_data)),
+  0);
   buffer.Write(5, write_data);
   EXPECT_EQ(buffer.cap_size_, 16);
 }

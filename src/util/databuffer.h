@@ -68,14 +68,18 @@ class DataBuffer {
       const DataReader* const constraintReader = nullptr);
 
 #ifdef __MOSS_TEST
+
  public:
 #else
+
  private:
 #endif
-  struct DataBlock {
+  struct DataBlock {  // 在申请DataBlock内存时，
+                      // 使用std::shared_ptr<DataBlock> p(newDataBlock(...))
+                      // 的形式 进行初始化，不要使用make_shared
     char* const buffer_;
     const size_t len_;
-    explicit DataBlock(int len) : len_(len), buffer_(new char[len_]) {}
+    explicit DataBlock(int len) : len_(len), buffer_(new char[len]) {}
     ~DataBlock() { delete[] buffer_; }
   };
   std::shared_ptr<DataBlock> block_;

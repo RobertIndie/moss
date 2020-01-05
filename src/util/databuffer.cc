@@ -90,7 +90,8 @@ uint64_t DataBuffer::MovePtr(uint64_t ptr, int64_t offset) {
 }
 
 void DataBuffer::Resize(std::shared_ptr<DataReader> min, Index_t new_cap_size) {
-  auto new_block = std::make_shared<DataBlock>(new_cap_size);
+  // auto new_block = std::make_shared<DataBlock>(new_cap_size);
+  std::shared_ptr<DataBlock> new_block(new DataBlock(new_cap_size));
   auto start_pos = min->ptr_;
   if (writer_pos_ >= start_pos) {
     memcpy(new_block->buffer_, block_->buffer_ + start_pos,
@@ -146,27 +147,32 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
                DPTR::Move(this, min->ptr_, offset);
 // resize
 #define SCHMIDT_COEFFICIENT (3 / 8)
-  if (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
-      cap_size_ >= 2) {  // 施密特触发降低resize灵敏度
-    auto new_cap_size = ceil(log2(data_size_ / block_size));
-    Resize(min, new_cap_size);
+  auto new_cap_size = cap_size_;
+  while (data_size_ <= cap_size_ * SCHMIDT_COEFFICIENT &&
+         cap_size_ >= 2) {  // 施密特触发降低resize灵敏度
+    cap_size_ /= 2;
   }
+  if (new_cap_size != cap_size_) Resize(min, new_cap_size);
   return read_count;
 }
 
 int DataBuffer::Write(const int count, const char* data) {
   WRITE_LOCK(lock_);
   DEFER_UNLOCK(lock_)
+  auto new_data_size = data_size_ + count;
   // resize
-  if (data_size_ + count >= cap_size_) {
+  if (new_data_size >= cap_size_) {
     auto offset = cap_size_ - writer_pos_ - 1;
     if (readers_.size() == 0) {
       DLOG(ERROR) << "No readers.";
       throw "No readers.";
     }
     auto min = *std::max_element(readers_.begin(), readers_.end());
-    auto new_cap_size = ceil(log2(data_size_ / block_size));
-    Resize(min, new_cap_size);
+    auto current_cap_size = cap_size_;
+    while (current_cap_size < new_data_size) {
+      current_cap_size *= 2;
+    }
+    Resize(min, current_cap_size);
   }
   auto end_ptr = DPTR::Move(this, writer_pos_, count);
   auto write_count = end_ptr - writer_pos_;
@@ -177,6 +183,6 @@ int DataBuffer::Write(const int count, const char* data) {
     memcpy(block_->buffer_, data + cap_size_ - writer_pos_, end_ptr);
   }
   writer_pos_ = end_ptr;
-  data_size_ += write_count;
-  return write_count;
+  data_size_ = new_data_size;
+  return count;
 }
