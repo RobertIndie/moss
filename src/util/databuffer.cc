@@ -59,9 +59,8 @@ int DataReader::Read(const int count, char* data) {
 }
 
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
-    : block_size(init_size), fixed_size_(fixed_size) {
+    : block_size(init_size), fixed_size_(fixed_size), cap_size_(init_size) {
   block_ = std::make_shared<DataBlock>(init_size);
-  cap_size_ = init_size;
   pthread_rwlock_init(&lock_, nullptr);
 }
 
@@ -161,6 +160,7 @@ int DataBuffer::Read(DataReader* const reader, const int count, char* data) {
 }
 
 int DataBuffer::Write(const int count, const char* data) {
+  if (is_final_ == true) return 0;
   WRITE_LOCK(lock_);
   DEFER_UNLOCK(lock_)
   auto new_data_size = data_size_ + count;

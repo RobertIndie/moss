@@ -53,6 +53,18 @@ class DataReader : public DPTR {
   DataReader(DataBuffer* const buffer, const DataReader* const constraint)
       : DPTR(buffer), constraint_(constraint) {}
   int Read(const int count, char* data = nullptr);
+  int GetRemainingDataSize() {
+    uint64_t end_ptr;
+    if (constraint_ != nullptr) {
+      end_ptr = constraint_->ptr_;
+    } else {
+      end_ptr = buffer_->writer_pos_;
+    }
+    auto offset = buffer_->cap_size_ - buffer_->writer_pos_ - 1;
+    auto maxCount = DPTR::Move(buffer_, end_ptr, offset) -
+                    DPTR::Move(buffer_, ptr_, offset);
+                    return maxCount;
+  }
 
  private:
   const DataReader* const constraint_;
@@ -66,6 +78,10 @@ class DataBuffer {
   ~DataBuffer();
   std::shared_ptr<DataReader> NewReader(
       const DataReader* const constraintReader = nullptr);
+  int Write(const int count, const char* data);
+  Index_t GetSize() { return data_size_; }
+  void SetFinal(bool final) { is_final_ = final; }
+  bool GetFinal() { return is_final_; }
 
 #ifdef __MOSS_TEST
 
@@ -91,11 +107,11 @@ class DataBuffer {
   pthread_rwlock_t lock_;
   Index_t writer_pos_ = 0;  // 准备写入的位置
   uint64_t MovePtr(uint64_t ptr, int64_t offset);
+  bool is_final_ = false;  // 写入是否结束，由用户端操作
   void Resize(std::shared_ptr<DataReader> min, Index_t new_cap_size);
   // 读取数据
   // 外部负责申请管理内存，当count为-1时，则读取所有可读取的数据
   int Read(DataReader* const reader, const int count, char* data = nullptr);
-  int Write(const int count, const char* data);
 };
 
 #endif  // UTIL_DATABUFFER_H_

@@ -23,8 +23,9 @@
 #include "./co_routine.h"
 #include "./command.h"
 #include "./frame.h"
-#include "./util/fsm.h"
 #include "./interfaces.h"
+#include "./util/databuffer.h"
+#include "./util/fsm.h"
 
 namespace moss {
 
@@ -53,16 +54,10 @@ class SendSide : public StreamSide, public CommandExecutor {
   struct CmdWriteData : public CmdSendSide {
    public:
     std::size_t GetHash() const { return typeid(this).hash_code(); }
-    explicit CmdWriteData(std::shared_ptr<std::stringstream> data,
-                          bool is_final)
-        : data_(data), is_final_(is_final) {}
+    explicit CmdWriteData() {}
 
    private:
-    bool is_final_;
-    std::shared_ptr<std::stringstream> data_;
-    int Call(SendSide* const sendSide) {
-      sendSide->WriteData(data_, is_final_);
-    }
+    int Call(SendSide* const sendSide) { sendSide->WriteData(); }
   };
   struct CmdEndStream : public CmdSendSide {
    public:
@@ -133,8 +128,11 @@ class SendSide : public StreamSide, public CommandExecutor {
   Stream* const stream_;
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
+  std::shared_ptr<DataReader> buffer_reader_;
   unsigned int flow_credit_ = 1500;
-  std::stringstream send_buffer_;
+  unsigned int used_credit_ = 0;
+  std::stringstream send_buffer_;  // 将被替换为DataBuffer
+  std::shared_ptr<DataBuffer> buffer_;
   unsigned char signal_;
   inline std::streampos GetSendBufferLen() {
     return send_buffer_.tellp() - send_buffer_.tellg();
@@ -150,7 +148,7 @@ class SendSide : public StreamSide, public CommandExecutor {
   int OnResetRecvd();
 
   void ConsumeCmd();
-  void WriteData(std::shared_ptr<std::stringstream> data, bool is_final);
+  void WriteData();
   void EndStream();
   void ResetStream();
 
@@ -169,6 +167,7 @@ class Stream {
   };
   streamID_t id_;
   CommandExecutor* const conn_;
+  std::shared_ptr<DataBuffer> send_buffer_;
   Stream(CommandExecutor* const conn, streamID_t id, Initializer initer,
          Directional direct)
       : conn_(conn),
@@ -176,7 +175,9 @@ class Stream {
         initer_(initer),
         direct_(direct),
         sendSide_(this),
-        recvSide_(this) {}
+        recvSide_(this) {
+    send_buffer_ = std::make_shared<DataBuffer>();
+  }
 
   // TODO(Multi-thread): just for test
   void WriteData(const char* data, int data_len, bool is_final = false);
@@ -194,7 +195,7 @@ class Stream {
   Initializer initer_;
   Directional direct_;
   SendSide sendSide_;
-  SendSide recvSide_;
+  SendSide recvSide_;  
 };
 
 }  // namespace moss

@@ -49,17 +49,17 @@ SendSide::SendSide(Stream* const stream) : stream_(stream) {
   cmdQueue_ = std::shared_ptr<CommandQueue<CmdSendSide>>(
       reinterpret_cast<CommandQueue<CmdSendSide>*>(
           new CoCmdQueue<CmdSendSide>(routine_)));
+  buffer_reader_ = stream->send_buffer_->NewReader();
   routine_->Resume();  // Init
 }
 
-void SendSide::SendData(int data_pos, bool final) {
+void SendSide::SendData(int data_pos, bool final) {  // TODO(Delete): 删除
   auto cmd = std::make_shared<CmdSendData>(stream_->id_, &send_buffer_,
                                            data_pos, final);
   stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
 
 void SendSide::SendDataBlocked(std::streampos data_limit) {
-  // TODO(gfl-fraeme): use frame conversion
   auto gfl = std::make_shared<GenericFrameLayout>();
   auto frame = std::make_shared<FrameStreamDataBlocked>();
   frame->stream_data_limit = data_limit;
@@ -70,14 +70,14 @@ void SendSide::SendDataBlocked(std::streampos data_limit) {
 }
 
 int SendSide::OnSend() {
-  // TODO(BufferStream): Define a buffer stream class
-  auto end_pos = send_buffer_.tellp();
-  if (end_pos - 1 >= flow_credit_) {
-    SendData(flow_credit_, CheckSignal(signal_, SignalMask::kBitEndStream));
+  auto read_max = flow_credit_ - used_credit_;
+  auto read_count = buffer_reader_->Read(read_max);
+  if (read_count == read_max) {  //遇到数据阻塞
     SendDataBlocked(flow_credit_);
-  } else {
-    SendData(end_pos, CheckSignal(signal_, SignalMask::kBitEndStream));
   }
+  used_credit_ += read_count;
+
+  // 检查信号
   if (CheckSignal(signal_, SignalMask::kBitEndStream)) {
     ClearSignal(signal_, SignalMask::kBitEndStream);
     fsm_.Trigger(TriggerType::kSendFIN);
@@ -105,11 +105,7 @@ int SendSide::OnResetRecvd() { return 0; }
 
 void SendSide::ConsumeCmd() { auto cmd = cmdQueue_->WaitAndExecuteCmds(this); }
 
-void SendSide::WriteData(std::shared_ptr<std::stringstream> data,
-                         bool is_final) {
-  send_buffer_ << data->str();
-  if (is_final) AddSignal(signal_, SignalMask::kBitEndStream);
-}
+void SendSide::WriteData() {}
 
 void SendSide::EndStream() { AddSignal(signal_, SignalMask::kBitEndStream); }
 
@@ -118,10 +114,10 @@ void SendSide::ResetStream() {
 }
 
 void Stream::WriteData(const char* data, int data_len, bool is_final) {
-  auto data_ss = std::make_shared<std::stringstream>();
-  data_ss->write(data, data_len);
+  send_buffer_->Write(data_len, data);  // TODO(IO): 将来是在用户线程中写入数据
+  send_buffer_->SetFinal(is_final);
   sendSide_.PushCommand(std::dynamic_pointer_cast<CommandBase>(
-      std::make_shared<SendSide::CmdWriteData>(data_ss, is_final)));
+      std::make_shared<SendSide::CmdWriteData>()));  // TODO(Delete): 现在没必要
 }
 
 void Stream::EndStream() {
