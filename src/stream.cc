@@ -49,6 +49,8 @@ SendSide::SendSide(Stream* const stream) : stream_(stream) {
   cmdQueue_ = std::shared_ptr<CommandQueue<CmdSendSide>>(
       reinterpret_cast<CommandQueue<CmdSendSide>*>(
           new CoCmdQueue<CmdSendSide>(routine_)));
+  if (!stream->send_buffer_.get())
+    stream->send_buffer_ = std::make_shared<DataBuffer>();
   buffer_reader_ = stream->send_buffer_->NewReader();
   routine_->Resume();  // Init
 }

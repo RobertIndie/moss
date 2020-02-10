@@ -73,8 +73,8 @@ int DataReader::GetRemainingDataSize() {
 
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
     : block_size(init_size), fixed_size_(fixed_size), cap_size_(init_size) {
-  block_ = std::make_shared<DataBlock>(init_size);
   pthread_rwlock_init(&lock_, nullptr);
+  block_ = std::make_shared<DataBlock>(init_size);
 }
 
 DataBuffer::~DataBuffer() {

@@ -167,7 +167,10 @@ class Stream {
   };
   streamID_t id_;
   CommandExecutor* const conn_;
-  std::shared_ptr<DataBuffer> send_buffer_;
+  std::shared_ptr<DataBuffer>
+      send_buffer_;  // 使用方需自行判断是否初始化send_buffer_
+  SendSide sendSide_;
+  SendSide recvSide_;
   Stream(CommandExecutor* const conn, streamID_t id, Initializer initer,
          Directional direct)
       : conn_(conn),
@@ -175,9 +178,7 @@ class Stream {
         initer_(initer),
         direct_(direct),
         sendSide_(this),
-        recvSide_(this) {
-    send_buffer_ = std::make_shared<DataBuffer>();
-  }
+        recvSide_(this) {}
 
   // TODO(Multi-thread): just for test
   void WriteData(const char* data, int data_len, bool is_final = false);
@@ -194,8 +195,6 @@ class Stream {
 #endif
   Initializer initer_;
   Directional direct_;
-  SendSide sendSide_;
-  SendSide recvSide_;  
 };
 
 }  // namespace moss
