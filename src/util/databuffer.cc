@@ -58,6 +58,19 @@ int DataReader::Read(const int count, char* data) {
   return buffer_->Read(this, count, data);
 }
 
+int DataReader::GetRemainingDataSize() {
+  uint64_t end_ptr;
+  if (constraint_ != nullptr) {
+    end_ptr = constraint_->ptr_;
+  } else {
+    end_ptr = buffer_->writer_pos_;
+  }
+  auto offset = buffer_->cap_size_ - buffer_->writer_pos_ - 1;
+  auto maxCount =
+      DPTR::Move(buffer_, end_ptr, offset) - DPTR::Move(buffer_, ptr_, offset);
+  return maxCount;
+}
+
 DataBuffer::DataBuffer(size_t init_size, bool fixed_size)
     : block_size(init_size), fixed_size_(fixed_size), cap_size_(init_size) {
   block_ = std::make_shared<DataBlock>(init_size);

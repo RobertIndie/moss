@@ -53,18 +53,7 @@ class DataReader : public DPTR {
   DataReader(DataBuffer* const buffer, const DataReader* const constraint)
       : DPTR(buffer), constraint_(constraint) {}
   int Read(const int count, char* data = nullptr);
-  int GetRemainingDataSize() {
-    uint64_t end_ptr;
-    if (constraint_ != nullptr) {
-      end_ptr = constraint_->ptr_;
-    } else {
-      end_ptr = buffer_->writer_pos_;
-    }
-    auto offset = buffer_->cap_size_ - buffer_->writer_pos_ - 1;
-    auto maxCount = DPTR::Move(buffer_, end_ptr, offset) -
-                    DPTR::Move(buffer_, ptr_, offset);
-                    return maxCount;
-  }
+  int GetRemainingDataSize();
 
  private:
   const DataReader* const constraint_;
