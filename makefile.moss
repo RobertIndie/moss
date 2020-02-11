@@ -1,6 +1,6 @@
 CXX = g++
 AR = ar crv
-CXXFLAGS = -std=c++11 -g -O2
+CXXFLAGS = -std=c++11 -g -O0 -D __MOSS_TEST -Wreturn-type -Wno-narrowing
 ifeq ($(PROJ_BASE),)
 PROJ_BASE := .
 endif
@@ -28,6 +28,7 @@ $(TARGET): $(OBJ)
 endif
 
 %.o : %.cc
+	# cpplint $<
 	$(CXX) $(CXXFLAGS) $(LIB_DIR) $(INC) -o $@ -c $< $(LIB)
 
 .PHONY: clean
