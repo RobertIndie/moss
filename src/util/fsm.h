@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https: //www.gnu.org/licenses/>.
 
-#ifndef FSM_FSM_H_
-#define FSM_FSM_H_
+#ifndef UTIL_FSM_H_
+#define UTIL_FSM_H_
 #include <functional>
 #include <map>
 #include <tuple>
@@ -43,4 +43,4 @@ class FSM {
   std::map<state_t, on_func_t> state_events;
 };
 
-#endif  // FSM_FSM_H_
+#endif  // UTIL_FSM_H_
