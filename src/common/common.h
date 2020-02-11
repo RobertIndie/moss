@@ -1,8 +1,8 @@
 /**
  * Copyright 2019 Aaron Robert
  * */
-#ifndef COMMON_COMMON_H_
-#define COMMON_COMMON_H_
+#ifndef SRC_COMMON_COMMON_H_
+#define SRC_COMMON_COMMON_H_
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -12,35 +12,6 @@
 #include <string>
 #include "iostream"
 #include "util/util.h"
-
-// struct to hold the value:
-template <typename T>
-struct bits_t {
-  T t;
-};  // no constructor necessary
-
-// functions to infer type, construct bits_t with a member initialization list
-// use a reference to avoid copying. The non-const version lets us extract too
-template <typename T>
-bits_t<T*> bits(T* t) {
-  return bits_t<T*>{t};
-}
-template <typename T>
-bits_t<const T&> bits(const T& t) {
-  return bits_t<const T&>{t};
-}
-// insertion operator to call ::write() on whatever type of stream
-template <typename S, typename T>
-S& operator<<(S& s, bits_t<T> b) {
-  s.write(reinterpret_cast<const char*>(&b.t), sizeof(T));
-  return s;
-}
-// extraction operator to call ::read(), require a pointer here
-template <typename S, typename T>
-S& operator>>(S& s, bits_t<T*> b) {
-  s.read(reinterpret_cast<char*>(b.t), sizeof(T));
-  return s;
-}
 
 struct Data {
   Data(const char *buff, size_t len) : cbuff(buff), len(len) {}
@@ -62,7 +33,7 @@ const int kRXTMin = 20;
 // max retransmit timeout value, in millisecond
 const int kRXTMax = 10000;
 // max times to retransmit
-const int kRXTMaxTimes = 10;
+const int kRXTMaxTimes = 3;
 class RTTInfo {
  public:
   float rtt;
@@ -180,4 +151,4 @@ class UDPChannelFactory : public ChannelFactory {
 };
 #pragma endregion
 
-#endif  // COMMON_COMMON_H_
+#endif  // SRC_COMMON_COMMON_H_
