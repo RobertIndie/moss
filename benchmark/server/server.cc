@@ -25,7 +25,6 @@ int Login(std::stringstream *in_data, std::stringstream *out_data) {
 }
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
   const char *ip = argv[1];
   int port = atoi(argv[2]);
   if (argc < 3) {

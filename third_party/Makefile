@@ -1,5 +1,8 @@
 THIRD_BUILD = $(shell mkdir -p ./build;cd ./build;pwd)
 THIRD_BASE = $(shell pwd)
+THIRD_REPO := \
+	./googletest\
+	./glog\
 
 .PHONY: build clean
 
@@ -7,7 +10,6 @@ build:
 	make build_googletest
 	make build_glog
 	make build_protobuf
-	make build_libco
 
 build_googletest:
 	mkdir -p ./build/googletest
@@ -20,9 +22,6 @@ build_glog:
 
 build_protobuf:
 	cd $(THIRD_BASE)/protobuf && git submodule update --init --recursive && ./autogen.sh && ./configure --disable-shared && make
-
-build_libco:
-	cd $(THIRD_BASE)/libco && make
 
 clean:
 	cd $(THIRD_BASE)/googletest && git checkout . && git clean -xdf
