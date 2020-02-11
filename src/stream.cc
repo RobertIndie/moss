@@ -52,13 +52,14 @@ SendSide::SendSide(Stream* const stream) : stream_(stream) {
   if (!stream->send_buffer_.get())
     stream->send_buffer_ = std::make_shared<DataBuffer>();
   buffer_reader_ = stream->send_buffer_->NewReader();
+  reader_for_conn_ = stream->send_buffer_->NewReader(buffer_reader_.get());
   routine_->Resume();  // Init
 }
 
 void SendSide::SendData(int data_pos, bool final) {  // TODO(Delete): 删除
-  auto cmd = std::make_shared<CmdSendData>(stream_->id_, &send_buffer_,
-                                           data_pos, final);
-  stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
+  // auto cmd = std::make_shared<CmdSendData>(stream_->id_, &send_buffer_,
+  //                                          data_pos, final);
+  // stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 }
 
 void SendSide::SendDataBlocked(std::streampos data_limit) {
@@ -78,6 +79,8 @@ int SendSide::OnSend() {
     SendDataBlocked(flow_credit_);
   }
   used_credit_ += read_count;
+  std::shared_ptr<CmdSendData> cmd(new CmdSendData(stream_->id_, read_count));
+  stream_->conn_->PushCommand(std::static_pointer_cast<CommandBase>(cmd));
 
   // 检查信号
   if (CheckSignal(signal_, SignalMask::kBitEndStream)) {

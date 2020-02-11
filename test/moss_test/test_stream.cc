@@ -45,17 +45,23 @@ TEST(Stream, SendSideSimpleSend) {
   stream->sendSide_.flow_credit_ = sizeof(data);
   // Test write data
   stream->WriteData(data, sizeof(data));
+  auto data_block_cmd =
+      std::dynamic_pointer_cast<moss::CmdSendGFL>(conn->cmdQueue_->PopCmd());
+  EXPECT_NE(data_block_cmd.get(), nullptr);
   auto send_data_cmd =
       std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
-  EXPECT_EQ(send_data_cmd->data_pos_, sizeof(data));
-  std::shared_ptr<char> result_data(new char[sizeof(data)]);
-  send_data_cmd->buffer_->read(result_data.get(), sizeof(data));
+  EXPECT_EQ(send_data_cmd->send_count_, sizeof(data));
+  // std::shared_ptr<char> result_data(new char[sizeof(data)]);
+  // send_data_cmd->buffer_->read(result_data.get(), sizeof(data));
+  std::shared_ptr<char> result_data(new char[send_data_cmd->send_count_]);
+  stream->sendSide_.reader_for_conn_->Read(send_data_cmd->send_count_,
+                                           result_data.get());
   EXPECT_EQ(memcmp(data, result_data.get(), sizeof(data)), 0);
   // Test stream flow control -- data block
   stream->WriteData(data, sizeof(data));
-  auto data_cmd =
-      std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
-  EXPECT_NE(data_cmd.get(), nullptr);
+  // auto data_cmd =
+  //     std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
+  // EXPECT_NE(data_cmd.get(), nullptr);
   auto blocked_cmd =
       std::dynamic_pointer_cast<moss::CmdSendGFL>(conn->cmdQueue_->PopCmd());
   EXPECT_NE(blocked_cmd.get(), nullptr);
@@ -70,6 +76,5 @@ TEST(Stream, SendSideSimpleSend) {
   stream->WriteData(data, sizeof(data), true);
   auto send_final_data_cmd =
       std::dynamic_pointer_cast<moss::CmdSendData>(conn->cmdQueue_->PopCmd());
-  EXPECT_EQ(send_final_data_cmd->data_pos_, 3 * sizeof(data));
-  EXPECT_EQ(send_final_data_cmd->is_final_, true);
+  EXPECT_EQ(stream->send_buffer_->is_final_, true);
 }

@@ -128,7 +128,10 @@ class SendSide : public StreamSide, public CommandExecutor {
   Stream* const stream_;
   std::shared_ptr<AsynRoutine> routine_;
   std::shared_ptr<CommandQueue<CmdSendSide>> cmdQueue_;
+  // readers
   std::shared_ptr<DataReader> buffer_reader_;
+  std::shared_ptr<DataReader> reader_for_conn_;
+
   unsigned int flow_credit_ = 1500;
   unsigned int used_credit_ = 0;
   std::stringstream send_buffer_;  // 将被替换为DataBuffer

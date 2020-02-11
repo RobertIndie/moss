@@ -32,8 +32,7 @@ class IConnection {
  public:
   virtual void SendGFL(streamID_t stream_id,
                        std::shared_ptr<GenericFrameLayout> gfl) = 0;
-  virtual void SendData(streamID_t stream_id, std::stringstream* buffer,
-                        int data_len) = 0;
+  virtual void SendData(streamID_t stream_id, int send_count) = 0;
 };
 
 #pragma region Commands
@@ -62,18 +61,12 @@ struct CmdSendGFL : public CmdConnection {
 struct CmdSendData : public CmdConnection {
  public:
   std::size_t GetHash() const { return typeid(this).hash_code(); }
-  CmdSendData(streamID_t stream_id, std::stringstream* buffer, int data_pos,
-              bool is_final)
-      : stream_id_(stream_id),
-        buffer_(buffer),
-        data_pos_(data_pos),
-        is_final_(is_final) {}
+  CmdSendData(streamID_t stream_id, int send_count)
+      : stream_id_(stream_id), send_count_(send_count) {}
   streamID_t stream_id_;
-  std::stringstream* buffer_;
-  int data_pos_;
-  bool is_final_;
+  int send_count_;
   int Call(IConnection* const connection) {
-    connection->SendData(stream_id_, buffer_, data_pos_);
+    connection->SendData(stream_id_, send_count_);
   }
 };
 
