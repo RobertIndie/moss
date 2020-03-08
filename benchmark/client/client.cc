@@ -29,7 +29,7 @@ void proc(int id, std::fstream &fs_err, std::fstream &fs_result, const char *ip,
 }
 
 int main(int argc, char *argv[]) {
-  FLAGS_stderrthreshold = 2;
+  google::InitGoogleLogging(argv[0]);
   std::fstream fs_err("./error.txt");
   std::fstream fs_result("./result.txt");
   if (!fs_err.is_open()) {
