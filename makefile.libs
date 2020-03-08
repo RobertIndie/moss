@@ -16,7 +16,7 @@ LIB_MOSS := -lMoss
 # gtest lib
 INC_GTEST := -I $(PROJ_BASE)/third_party/googletest/googletest/include
 LIB_DIR_GTEST := -L $(PROJ_BASE)/third_party/build/googletest/lib
-LIB_GTEST := -pthread -lgtest # pay attention to the lib order
+LIB_GTEST := -lgtest
 
 # glog lib
 INC_GLOG := -I $(PROJ_BASE)/third_party/glog/src
@@ -28,13 +28,18 @@ INC_PROTOBUF := -I $(PROJ_BASE)/third_party/protobuf/src
 LIB_DIR_PROTOBUF := -L $(PROJ_BASE)/third_party/protobuf/src/.libs
 LIB_PROTOBUF := -lprotobuf
 
+# libco lib
+INC_LIBCO := -I $(PROJ_BASE)/third_party/libco
+LIB_DIR_LIBCO := -L $(PROJ_BASE)/third_party/libco/lib
+LIB_LIBCO := -lcolib -ldl
+
 # Test proto
 INC_TEST_PROTO := -I $(PROJ_BASE)/test/proto
 LIB_TEST_PROTO := -lTestProto
 
 # include path
-INC += $(INC_GLOG) $(INC_PROTOBUF)
+INC += $(INC_GLOG) $(INC_PROTOBUF) $(INC_LIBCO)
 # lib dir path
-LIB_DIR += $(LIB_PROJ) $(LIB_DIR_GLOG) $(LIB_DIR_PROTOBUF)
+LIB_DIR += $(LIB_PROJ) $(LIB_DIR_GLOG) $(LIB_DIR_PROTOBUF) $(LIB_DIR_LIBCO)
 # lib files
-LIB += $(LIB_GLOG) $(LIB_PROTOBUF)
+LIB += -lpthread $(LIB_GLOG) $(LIB_PROTOBUF) $(LIB_LIBCO)

@@ -1,14 +1,18 @@
 /**
  * Copyright 2019 Aaron Robert
  * */
-#ifndef SRC_UTIL_UTIL_H_
-#define SRC_UTIL_UTIL_H_
+#ifndef UTIL_UTIL_H_
+#define UTIL_UTIL_H_
 #if __cplusplus >= 201103L
 #define CPP11
 #endif
 #include <stdint.h>
 #include <sys/time.h>
+#include <functional>
+#include <memory>
+#include <sstream>
 #include <string>
+#include "./co_routine.h"
 #include "glog/logging.h"
 
 inline void InitLogger(char *argv[]) {
@@ -61,4 +65,16 @@ inline unsigned int BKDRHash(const char *str) {
   return (hash & 0x7FFFFFFF);
 }
 
-#endif  // SRC_UTIL_UTIL_H_
+#define AddSignal(signal, mask) (signal |= 1 << mask)
+#define CheckSignal(signal, mask) ((signal & 1 << mask) != 0)
+#define ClearSignal(signal, mask) (signal &= ~mask)
+
+#define _MACRO_CONTACT_IMPL(x, y) x##y
+#define _MACRO_CONTACT(x, y) _MACRO_CONTACT_IMPL(x, y)
+
+#define DEFER(X)                                          \
+  auto _MACRO_CONTACT(_cpp_defer_obj_, __LINE__) =        \
+      std::unique_ptr<void, std::function<void(void *)>>{ \
+          reinterpret_cast<void *>(1), [&](void *) { X }};
+
+#endif  // UTIL_UTIL_H_
